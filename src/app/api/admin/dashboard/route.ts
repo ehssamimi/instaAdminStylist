@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server'
+import { adminRouteUsesMock } from '@/lib/admin-route-mock'
 import { dashboardOverviewMock } from '@/mocks/data/dashboard-overview'
 
 /**
  * Handles GET /api/admin/dashboard before Next rewrites send it to the backend.
  * - Development: returns the same JSON as MSW so the dashboard works without a backend route.
  * - Production: proxies to NEXT_PUBLIC_API_URL (set NEXT_PUBLIC_DASHBOARD_USE_LIVE_API=true in dev to proxy too).
+ * - Production + ADMIN_API_USE_MOCK=true: returns mock (e.g. Vercel without backend routes).
  */
 export async function GET(request: Request) {
   const useLive =
     process.env.NEXT_PUBLIC_DASHBOARD_USE_LIVE_API === 'true'
 
-  if (process.env.NODE_ENV === 'development' && !useLive) {
+  if (adminRouteUsesMock(useLive)) {
     return NextResponse.json({
       success: true,
       data: dashboardOverviewMock,

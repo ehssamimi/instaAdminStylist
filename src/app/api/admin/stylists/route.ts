@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
-import { getMockStylistDetail, MOCK_STYLISTS } from '@/mocks/data/stylists'
+import { adminRouteUsesMock } from '@/lib/admin-route-mock'
+import { MOCK_STYLISTS } from '@/mocks/data/stylists'
 import type { StylistsListResponse } from '@/models/stylists'
 
 export async function GET(request: Request) {
   const useLive = process.env.NEXT_PUBLIC_STYLISTS_USE_LIVE_API === 'true'
 
-  if (process.env.NODE_ENV === 'development' && !useLive) {
+  if (adminRouteUsesMock(useLive)) {
     const { searchParams } = new URL(request.url)
     const page = Number(searchParams.get('page') ?? '1')
     const perPage = Number(searchParams.get('per_page') ?? '10')
@@ -54,10 +55,20 @@ export async function GET(request: Request) {
   }
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL
+  if (!backendUrl) {
+    return NextResponse.json(
+      { success: false, message: 'NEXT_PUBLIC_API_URL is not set' },
+      { status: 500 }
+    )
+  }
+
   const { search } = new URL(request.url)
-  const upstream = await fetch(`${backendUrl}/api/admin/stylists${search}`, {
-    headers: { cookie: request.headers.get('cookie') ?? '' },
-  })
+  const upstream = await fetch(
+    `${backendUrl.replace(/\/$/, '')}/api/admin/stylists${search}`,
+    {
+      headers: { cookie: request.headers.get('cookie') ?? '' },
+    }
+  )
   const json = await upstream.json()
   return NextResponse.json(json, { status: upstream.status })
 }
