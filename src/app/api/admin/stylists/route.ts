@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { adminRouteUsesMock } from '@/lib/admin-route-mock'
+import { backendApiBaseFromEnv } from '@/lib/backend-api-url'
 import type { StylistsListResponse } from '@/models/stylists'
 
 export async function GET(request: Request) {
@@ -54,8 +55,8 @@ export async function GET(request: Request) {
     return NextResponse.json(body)
   }
 
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL
-  if (!backendUrl) {
+  const apiBase = backendApiBaseFromEnv()
+  if (!apiBase) {
     return NextResponse.json(
       { success: false, message: 'NEXT_PUBLIC_API_URL is not set' },
       { status: 500 }
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
 
   const { search } = new URL(request.url)
   const upstream = await fetch(
-    `${backendUrl.replace(/\/$/, '')}/api/admin/stylists${search}`,
+    `${apiBase}/admin/stylists${search}`,
     {
       headers: { cookie: request.headers.get('cookie') ?? '' },
     }

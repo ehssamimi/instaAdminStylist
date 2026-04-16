@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { adminRouteUsesMock } from '@/lib/admin-route-mock'
+import { backendApiBaseFromEnv } from '@/lib/backend-api-url'
 
 /**
  * Handles GET /api/admin/dashboard before Next rewrites send it to the backend.
@@ -21,15 +22,15 @@ export async function GET(request: Request) {
     })
   }
 
-  const base = process.env.NEXT_PUBLIC_API_URL
-  if (!base) {
+  const apiBase = backendApiBaseFromEnv()
+  if (!apiBase) {
     return NextResponse.json(
       { success: false, message: 'NEXT_PUBLIC_API_URL is not set' },
       { status: 500 }
     )
   }
 
-  const url = `${base.replace(/\/$/, '')}/api/admin/dashboard`
+  const url = `${apiBase}/admin/dashboard`
   const auth = request.headers.get('authorization')
 
   const res = await fetch(url, {

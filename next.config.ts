@@ -1,5 +1,21 @@
 import type { NextConfig } from "next";
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
+import { normalizeBackendApiOrigin } from "./src/lib/backend-api-url";
+
+const backendOrigin = normalizeBackendApiOrigin(process.env.NEXT_PUBLIC_API_URL);
+
+function backendHostnameForImages(): string | undefined {
+  if (!backendOrigin) return undefined;
+  try {
+    const href = backendOrigin.includes("://")
+      ? backendOrigin
+      : `http://${backendOrigin}`;
+    return new URL(href).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+const backendImageHost = backendHostnameForImages();
 
 const nextConfig: NextConfig = {
   // Optimize tree-shaking for large icon/UI packages so only used icons are bundled
@@ -44,11 +60,15 @@ const nextConfig: NextConfig = {
         hostname: "3.89.211.92",
         pathname: "/storage/categories/**",
       },
-      {
-        protocol: "http",
-        hostname: new URL(BACKEND_URL!).hostname,
-        pathname: "/storage/categories/**",
-      },
+      ...(backendImageHost
+        ? [
+            {
+              protocol: "http" as const,
+              hostname: backendImageHost,
+              pathname: "/storage/categories/**",
+            },
+          ]
+        : []),
       {
         protocol: "https",
         hostname: "getcover-production-s3.s3.amazonaws.com",
@@ -57,11 +77,14 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    if (!backendOrigin) {
+      return { fallback: [] };
+    }
     return {
       fallback: [
         {
           source: "/api/:path*",
-          destination: `${BACKEND_URL}/api/:path*`,
+          destination: `${backendOrigin}/api/:path*`,
         },
       ],
     };

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
+import { backendApiBaseFromEnv } from '@/lib/backend-api-url'
 
 /**
  * Proxies GET /api/admin/bookings to the configured backend.
  * Mock data lives in `@/lib/mock-bookings` for MSW (optional) and stylist fixtures only.
  */
 export async function GET(request: Request) {
-  const base = process.env.NEXT_PUBLIC_API_URL
-  if (!base) {
+  const apiBase = backendApiBaseFromEnv()
+  if (!apiBase) {
     return NextResponse.json(
       { success: false, message: 'NEXT_PUBLIC_API_URL is not set' },
       { status: 500 }
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
     forwardParams.delete('per_page')
   }
   const qs = forwardParams.toString()
-  const url = `${base.replace(/\/$/, '')}/api/admin/bookings${qs ? `?${qs}` : ''}`
+  const url = `${apiBase}/admin/bookings${qs ? `?${qs}` : ''}`
   const auth = request.headers.get('authorization')
 
   const res = await fetch(url, {

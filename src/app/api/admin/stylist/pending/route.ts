@@ -1,27 +1,10 @@
 import { NextResponse } from 'next/server'
-import { adminRouteUsesMock } from '@/lib/admin-route-mock'
 import { backendApiBaseFromEnv } from '@/lib/backend-api-url'
 
 /**
- * GET /api/admin/revenue — revenue charts + optional `summaryByRange` for stat cards.
- * - Development: returns mock JSON (same pattern as `/api/admin/dashboard`).
- * - Set `NEXT_PUBLIC_REVENUE_USE_LIVE_API=true` to proxy to the backend.
- * - Production + `ADMIN_API_USE_MOCK=true`: returns mock.
+ * Proxies GET /api/admin/stylist/pending to the backend (same path under NEXT_PUBLIC_API_URL).
  */
 export async function GET(request: Request) {
-  const useLive =
-    process.env.NEXT_PUBLIC_REVENUE_USE_LIVE_API === 'true'
-
-  if (adminRouteUsesMock(useLive)) {
-    const { revenueOverviewMock } = await import(
-      '@/mocks/data/revenue-overview'
-    )
-    return NextResponse.json({
-      success: true,
-      data: revenueOverviewMock,
-    })
-  }
-
   const apiBase = backendApiBaseFromEnv()
   if (!apiBase) {
     return NextResponse.json(
@@ -30,7 +13,7 @@ export async function GET(request: Request) {
     )
   }
 
-  const url = `${apiBase}/admin/revenue`
+  const url = `${apiBase}/admin/stylist/pending`
   const auth = request.headers.get('authorization')
 
   const res = await fetch(url, {
