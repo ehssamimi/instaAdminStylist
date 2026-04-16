@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 
-import { filterAndPaginateMockReports } from "@/lib/mock-reports"
 import type { ReportRow } from "@/lib/mock-reports"
 import type { ReportStatus } from "@/models/reports"
 
@@ -24,19 +23,23 @@ export function useReportsOverview(status: ReportStatus) {
     setLoading(true)
 
     const t = window.setTimeout(() => {
-      const { rows, totalPages: tp, total: tCount } = filterAndPaginateMockReports({
-        status,
-        search,
-        page,
-        pageSize: perPage,
-      })
-      if (!cancelled) {
-        setData(rows)
-        setTotalPages(tp)
-        setTotal(tCount)
-        setPage((p) => Math.min(p, Math.max(1, tp)))
-        setLoading(false)
-      }
+      void (async () => {
+        const { filterAndPaginateMockReports } = await import("@/lib/mock-reports")
+        const { rows, totalPages: tp, total: tCount } =
+          filterAndPaginateMockReports({
+            status,
+            search,
+            page,
+            pageSize: perPage,
+          })
+        if (!cancelled) {
+          setData(rows)
+          setTotalPages(tp)
+          setTotal(tCount)
+          setPage((p) => Math.min(p, Math.max(1, tp)))
+          setLoading(false)
+        }
+      })()
     }, 120)
 
     return () => {

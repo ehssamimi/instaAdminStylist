@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { adminRouteUsesMock } from '@/lib/admin-route-mock'
-import { getMockStylistDetail } from '@/mocks/data/stylists'
 
 export async function GET(
   request: Request,
@@ -10,6 +9,7 @@ export async function GET(
   const useLive = process.env.NEXT_PUBLIC_STYLISTS_USE_LIVE_API === 'true'
 
   if (adminRouteUsesMock(useLive)) {
+    const { getMockStylistDetail } = await import('@/mocks/data/stylists')
     const detail = getMockStylistDetail(id)
     return NextResponse.json(
       { success: Boolean(detail), data: detail },
@@ -26,7 +26,7 @@ export async function GET(
   }
 
   const upstream = await fetch(
-    `${backendUrl.replace(/\/$/, '')}/api/admin/stylists/${id}`,
+    `${backendUrl.replace(/\/$/, '')}/api/stylist/details/${id}`,
     {
       headers: { cookie: request.headers.get('cookie') ?? '' },
     }

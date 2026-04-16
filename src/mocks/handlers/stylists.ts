@@ -61,4 +61,16 @@ export const stylistsHandlers = [
     }
     return HttpResponse.json(body, { status: detail ? 200 : 404 })
   }),
+
+  /** Same mock as admin stylist detail; client uses this path for live API shape. */
+  http.get('/api/stylist/details/:id', ({ params }) => {
+    const id = typeof params.id === 'string' ? params.id : params.id?.[0] ?? ''
+    const detail = getMockStylistDetail(id)
+
+    const body: StylistDetailResponse = {
+      success: Boolean(detail),
+      data: detail,
+    }
+    return HttpResponse.json(body, { status: detail ? 200 : 404 })
+  }),
 ]

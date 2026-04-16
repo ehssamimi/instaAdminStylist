@@ -31,10 +31,21 @@ export function getHeaderBreadcrumbs(
   if (bookingDetail?.[1]) {
     const from = searchParams?.get("from")
     const stylistId = searchParams?.get("stylistId")
+    const customerId = searchParams?.get("customerId")
     if (from === "stylist" && stylistId) {
       return [
         { label: "Stylists", href: "/dashboard/stylists" },
         { label: "Stylist Profile", href: `/dashboard/stylist/${stylistId}` },
+        { label: "Booking Details" },
+      ]
+    }
+    if (from === "customer" && customerId) {
+      return [
+        { label: "Customers", href: "/dashboard/customers" },
+        {
+          label: "Customer Profile",
+          href: `/dashboard/customers/${customerId}`,
+        },
         { label: "Booking Details" },
       ]
     }
@@ -57,6 +68,14 @@ export function getHeaderBreadcrumbs(
     return [
       { label: "Stylists", href: "/dashboard/stylists" },
       { label: "Stylist Profile" },
+    ]
+  }
+
+  const customerDetail = pathname.match(/^\/dashboard\/customers\/([^/]+)$/)
+  if (customerDetail?.[1]) {
+    return [
+      { label: "Customers", href: "/dashboard/customers" },
+      { label: "Customer Profile" },
     ]
   }
 

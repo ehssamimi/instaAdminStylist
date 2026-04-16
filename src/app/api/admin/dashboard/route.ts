@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { adminRouteUsesMock } from '@/lib/admin-route-mock'
-import { dashboardOverviewMock } from '@/mocks/data/dashboard-overview'
 
 /**
  * Handles GET /api/admin/dashboard before Next rewrites send it to the backend.
@@ -13,6 +12,9 @@ export async function GET(request: Request) {
     process.env.NEXT_PUBLIC_DASHBOARD_USE_LIVE_API === 'true'
 
   if (adminRouteUsesMock(useLive)) {
+    const { dashboardOverviewMock } = await import(
+      '@/mocks/data/dashboard-overview'
+    )
     return NextResponse.json({
       success: true,
       data: dashboardOverviewMock,

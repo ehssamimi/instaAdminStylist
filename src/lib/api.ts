@@ -30,6 +30,7 @@ import { ForgotPasswordResponse, VerifyPasswordResetOtpResponse, ResetPasswordRe
 import { VerifyEmailOtpRequest, VerifyEmailOtpResponse } from '@/models/verifyEmailOtp'
 import { DashboardStatsResponse, DashboardMetricsResponse } from '@/models/dashboardStats'
 import { DashboardOverviewResponse } from '@/models/dashboardOverview'
+import type { RevenueOverviewResponse } from '@/models/revenueOverview'
 import {
   AdminBookingsListResponse,
   BookingDetailResponse,
@@ -37,11 +38,16 @@ import {
   normalizeAdminBookingListItem,
   normalizeBookingDetailFromApi,
 } from '@/models/bookings'
-import { StylistDetailResponse, StylistsListResponse } from '@/models/stylists'
+import {
+  normalizeStylistDetailResponse,
+  StylistDetailResponse,
+  StylistsListResponse,
+} from '@/models/stylists'
 import { DuplicatedProductsResponse } from '@/models/duplicatedProducts'
 import { PendingStylistApplicationsResponse } from '@/models/stylistApplication'
 import type { AdminFeeDto, AdminFeePutItem } from '@/models/fees'
 import type { ReportStatus } from '@/models/reports'
+import type { OnboardingOption } from '@/models/onboardingOptions'
 
 // Generic API utility functions
 export const api = {
@@ -135,6 +141,11 @@ export const dashboardApi = {
   /** Single payload for dashboard home: stats + chart datasets (same path MSW mocks when flag on). */
   getOverview: async () => {
     return api.get<DashboardOverviewResponse>('/admin/dashboard')
+  },
+
+  /** Revenue tab: series + optional `summaryByRange` (`GET /api/admin/revenue`). */
+  getRevenueOverview: async () => {
+    return api.get<RevenueOverviewResponse>('/admin/revenue')
   },
 
   getStats: async () => {
@@ -240,8 +251,10 @@ export const stylistsApi = {
   getList: async (params?: { page?: number; per_page?: number; search?: string }) => {
     return api.get<StylistsListResponse>('/admin/stylists', { params })
   },
-  getById: async (id: string) => {
-    return api.get<StylistDetailResponse>(`/admin/stylists/${id}`)
+  /** Live stylist profile: `GET /api/stylist/details/:id` (proxied). */
+  getById: async (id: string): Promise<StylistDetailResponse> => {
+    const raw = await api.get<unknown>(`/stylist/details/${id}`)
+    return normalizeStylistDetailResponse(raw)
   },
 }
 
@@ -306,6 +319,12 @@ export const categoriesApi = {
 export const stylistApplicationsApi = {
   getPending: async () => {
     return api.get<PendingStylistApplicationsResponse>('/admin/stylist/pending')
+  },
+}
+
+export const onboardingApi = {
+  getOptions: async (params: { screen_type: string; user_type: string }) => {
+    return api.get<OnboardingOption[]>('/onboarding/options', { params })
   },
 }
 

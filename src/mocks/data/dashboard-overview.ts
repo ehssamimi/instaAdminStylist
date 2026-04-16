@@ -52,6 +52,21 @@ export const dashboardOverviewMock: DashboardOverviewData = {
       { date: '2026-05-01', sales: 1530 },
     ],
   },
+  salesAllTime: [
+    { date: '2024-05-01', sales: 820 },
+    { date: '2024-07-01', sales: 960 },
+    { date: '2024-09-01', sales: 740 },
+    { date: '2024-11-01', sales: 1120 },
+    { date: '2025-01-01', sales: 890 },
+    { date: '2025-03-01', sales: 1340 },
+    { date: '2025-05-01', sales: 1010 },
+    { date: '2025-07-01', sales: 1280 },
+    { date: '2025-09-01', sales: 990 },
+    { date: '2025-11-01', sales: 1520 },
+    { date: '2026-01-01', sales: 1180 },
+    { date: '2026-03-01', sales: 1620 },
+    { date: '2026-05-01', sales: 1390 },
+  ],
   referralSourcesByRange: {
     '7d': [
       { label: 'Stylist', count: 200 },

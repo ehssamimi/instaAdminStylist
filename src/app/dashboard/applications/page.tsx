@@ -13,12 +13,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { usePageTitle } from "@/hooks/use-page-title"
 import { usePendingStylistApplications } from "@/hooks/use-stylist-applications"
 import type { PendingStylistApplication } from "@/models/stylistApplication"
+import { EachContainer } from "@/components/each-container"
+import { ADMIN_DASHBOARD_TABS_TRIGGER_CLASS } from "@/lib/admin-dashboard-tabs"
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const applicationSchema = z.object({
   id: z.string(),
+  /** User/stylist id for `GET /api/stylist/details/:id` (not the application row id). */
+  stylist_id: z.string(),
   last_name: z.string(),
   first_name: z.string(),
   experience: z.string(),
@@ -45,6 +49,7 @@ function mapPendingToRow(item: PendingStylistApplication): ApplicationRow {
 
   return {
     id: item.id,
+    stylist_id: item.userId,
     last_name: last || "—",
     first_name: first || "—",
     experience: experienceDisplay,
@@ -76,11 +81,6 @@ function filterRows(
     return hay.includes(q)
   })
 }
-
-const tabsTriggerClass =
-  "rounded-none border-0 border-b-2 border-transparent bg-transparent px-3 pb-3 text-muted-foreground shadow-none " +
-  "data-[state=active]:border-b-[3px] data-[state=active]:border-[#8B7344] data-[state=active]:bg-transparent " +
-  "data-[state=active]:text-[#8B7344] data-[state=active]:shadow-none"
 
 export default function ApplicationsPage() {
   const { title } = usePageTitle()
@@ -119,7 +119,7 @@ export default function ApplicationsPage() {
     (row: unknown) => {
       const r = row as ApplicationRow
       setIsNavigating(true)
-      router.push(`/dashboard/applications/${r.id}`)
+      router.push(`/dashboard/applications/${r.stylist_id}`)
     },
     [router]
   )
@@ -207,13 +207,22 @@ export default function ApplicationsPage() {
       >
         <div className="w-full border-0 border-b border-gray-200">
           <TabsList className="mb-0 h-auto   justify-start gap-8 rounded-none  bg-transparent p-0">
-            <TabsTrigger value="needs-review" className={tabsTriggerClass}>
+            <TabsTrigger
+              value="needs-review"
+              className={ADMIN_DASHBOARD_TABS_TRIGGER_CLASS}
+            >
               Needs Review
             </TabsTrigger>
-            <TabsTrigger value="approved" className={tabsTriggerClass}>
+            <TabsTrigger
+              value="approved"
+              className={ADMIN_DASHBOARD_TABS_TRIGGER_CLASS}
+            >
               Approved
             </TabsTrigger>
-            <TabsTrigger value="rejected" className={tabsTriggerClass}>
+            <TabsTrigger
+              value="rejected"
+              className={ADMIN_DASHBOARD_TABS_TRIGGER_CLASS}
+            >
               Rejected
             </TabsTrigger>
           </TabsList>
@@ -236,7 +245,8 @@ export default function ApplicationsPage() {
         </div>
       )}
 
-      <div className="mt-6 rounded-xl border border-border-soft bg-white p-4 shadow-sm md:p-6">
+  <EachContainer className="mt-4">
+      <div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex w-full flex-1 items-center gap-3">
             <SearchInput
@@ -244,6 +254,8 @@ export default function ApplicationsPage() {
               onSearch={handleSearch}
               placeholder="Search"
               disabled={listLoading}
+              className="h-[var(--height-form-field)]"
+
             />
           </div>
           <Button
@@ -272,6 +284,8 @@ export default function ApplicationsPage() {
           />
         </div>
       </div>
+     
+    </EachContainer>
     </div>
   )
 }

@@ -1,8 +1,13 @@
-"use client"
+'use client'
 
-import { StylistProfileView } from "@/components/stylist-profile-view"
+import dynamic from 'next/dynamic'
+
+const ApplicationDetailContent = dynamic(() => import('./_content'), {
+  ssr: false,
+  loading: () => null,
+})
 
 export default function StylistProfilePage() {
-  return <StylistProfileView backHref="/dashboard/applications" />
+  return <ApplicationDetailContent />
 }
-export const runtime = 'edge';
+export const runtime = 'edge'

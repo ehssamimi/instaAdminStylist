@@ -17,7 +17,7 @@ import {
   TableStatusBadge,
   tableStatusLabels,
 } from '@/components/ui/table-status-badge'
-import { formatDurationLabel } from '@/lib/mock-bookings'
+import { formatDurationLabel } from '@/lib/booking-format'
 import type { BookingDetailDto } from '@/models/bookings'
 
 type BookingDetailsPageViewProps = {

@@ -1,23 +1,13 @@
 'use client'
 
-import { useParams } from 'next/navigation'
-import { StylistProfilePageView } from '@/components/stylist-profile-page-view'
-import { useStylistDetail } from '@/hooks/use-stylist-detail'
+import dynamic from 'next/dynamic'
+
+const StylistDetailsContent = dynamic(() => import('./_content'), {
+  ssr: false,
+  loading: () => null,
+})
 
 export default function StylistDetailsPage() {
-  const params = useParams()
-  const id = typeof params.id === 'string' ? params.id : params.id?.[0] ?? ''
-
-  const { data, loading, error } = useStylistDetail(id)
-
-  return (
-    <StylistProfilePageView
-      stylist={data}
-      loading={loading}
-      errorMessage={error?.message ?? null}
-      backHref="/dashboard/stylists"
-      backAriaLabel="Back to stylists"
-    />
-  )
+  return <StylistDetailsContent />
 }
-export const runtime = 'edge';
+export const runtime = 'edge'

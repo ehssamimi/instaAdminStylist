@@ -111,7 +111,9 @@ export function matchNavItem(pathname: string): NavMainItem | undefined {
   // Singular /dashboard/stylist/:id is a detail view for the Stylists section
   const resolvedPath = /^\/dashboard\/stylist(?:\/|$)/.test(pathname)
     ? "/dashboard/stylists"
-    : pathname
+    : /^\/dashboard\/customers\/[^/]+/.test(pathname)
+      ? "/dashboard/customers"
+      : pathname
   // Prefer longest match for nested routes
   return navMainAdmin
     .filter(

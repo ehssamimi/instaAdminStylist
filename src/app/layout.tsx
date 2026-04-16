@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Providers from "@/lib/provider";
-import { MswProvider } from "@/components/msw-provider";
-import { Toaster } from "@/components/ui/sonner"
+import ClientProviders from "@/lib/client-providers";
 import localFont from 'next/font/local'
 
 const lufga = localFont({
@@ -72,12 +70,9 @@ export default function RootLayout({
       <body
         className={`${lufga.className} antialiased`}
       >
-        <MswProvider>
-          <Providers>
-            {children}
-          </Providers>
-        </MswProvider>
-        <Toaster />
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

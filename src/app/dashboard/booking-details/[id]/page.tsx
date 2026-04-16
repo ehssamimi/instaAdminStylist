@@ -1,23 +1,13 @@
-"use client"
+'use client'
 
-import { useParams } from "next/navigation"
-import { BookingDetailsPageView } from "@/components/booking-details-page-view"
-import { useBookingDetail } from "@/hooks/use-booking-detail"
+import dynamic from 'next/dynamic'
+
+const BookingDetailsStandaloneContent = dynamic(() => import('./_content'), {
+  ssr: false,
+  loading: () => null,
+})
 
 export default function BookingDetailsStandalonePage() {
-  const params = useParams()
-  const id =
-    typeof params.id === "string" ? params.id : params.id?.[0] ?? ""
-  const { data, loading, error } = useBookingDetail(id)
-
-  return (
-    <BookingDetailsPageView
-      booking={data}
-      loading={loading}
-      errorMessage={error?.message ?? null}
-      backHref="/dashboard/bookings"
-      backAriaLabel="Back to booking history"
-    />
-  )
+  return <BookingDetailsStandaloneContent />
 }
-export const runtime = 'edge';
+export const runtime = 'edge'

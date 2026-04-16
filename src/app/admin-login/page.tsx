@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft, Mail, CircleHelp, Lock } from 'lucide-react'
+import { Loader2, ArrowLeft, Mail } from 'lucide-react'
 import OtpInput from 'react-otp-input';
 
 import {
@@ -17,26 +17,39 @@ import { Button } from '@/components/ui/button'
 
 import { FormItemInput } from '@/components/ui/form-item-input'
 
-import { loginFormSchema } from '@/lib/validation-schemas'
+import { emailSchema, loginFormSchema } from '@/lib/validation-schemas'
 import { authApi } from '@/lib/api'
 import { persistSession, clearRefreshToken, updateAccessToken } from '@/lib/jwt-utils'
 import Image from 'next/image';
 
 const formSchema = loginFormSchema
+const forgotEmailSchema = z.object({
+  email: emailSchema,
+})
+
 const LoginPage = () => {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [mode, setMode] = useState<'login' | 'otp'>('login')
+  const [mode, setMode] = useState<'login' | 'otp' | 'forgot-password'>('login')
   const [otp, setOtp] = useState('')
   const [otpError, setOtpError] = useState('')
   const [isResending, setIsResending] = useState(false)
   const [email, setEmail] = useState('')
   const [resendTimer, setResendTimer] = useState(0)
+  const [forgotResendTimer, setForgotResendTimer] = useState(0)
+  const [isForgotSending, setIsForgotSending] = useState(false)
+  const [isForgotResending, setIsForgotResending] = useState(false)
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
       password: '',
+    },
+  })
+  const forgotForm = useForm<z.infer<typeof forgotEmailSchema>>({
+    resolver: zodResolver(forgotEmailSchema),
+    defaultValues: {
+      email: '',
     },
   })
 
@@ -131,6 +144,65 @@ const LoginPage = () => {
     setResendTimer(0)
   }
 
+  const openForgotPassword = () => {
+    const loginEmail = form.getValues('email')
+    if (loginEmail) {
+      forgotForm.setValue('email', loginEmail)
+    }
+    setMode('forgot-password')
+  }
+
+  const handleBackFromForgotPassword = () => {
+    setMode('login')
+    setForgotResendTimer(0)
+  }
+
+  async function onForgotSubmit(values: z.infer<typeof forgotEmailSchema>) {
+    setIsForgotSending(true)
+    try {
+      const response = await authApi.forgotPassword(values.email.toLowerCase())
+      toast.success(
+        (response as { message?: string }).message ??
+          'If an account exists for this email, you will receive reset instructions shortly.',
+      )
+      setForgotResendTimer(60)
+    } catch (error) {
+      let errorMessage = 'Could not send reset email. Please try again.'
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { data?: { message?: string } } }
+        errorMessage = apiError.response?.data?.message ?? errorMessage
+      }
+      toast.error(errorMessage)
+    } finally {
+      setIsForgotSending(false)
+    }
+  }
+
+  const handleForgotResend = async () => {
+    if (forgotResendTimer > 0) return
+    const addr = forgotForm.getValues('email')
+    const parsed = emailSchema.safeParse(addr)
+    if (!parsed.success) {
+      toast.error('Enter a valid email address first.')
+      return
+    }
+    setIsForgotResending(true)
+    try {
+      await authApi.forgotPassword(parsed.data.toLowerCase())
+      toast.success('Reset instructions sent again.')
+      setForgotResendTimer(60)
+    } catch (error) {
+      let errorMessage = 'Could not resend email. Please try again.'
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { data?: { message?: string } } }
+        errorMessage = apiError.response?.data?.message ?? errorMessage
+      }
+      toast.error(errorMessage)
+    } finally {
+      setIsForgotResending(false)
+    }
+  }
+
   // Clear OTP error when user starts typing
   useEffect(() => {
     if (otp.length > 0) {
@@ -146,6 +218,14 @@ const LoginPage = () => {
     }, 1000)
     return () => clearInterval(interval)
   }, [resendTimer])
+
+  useEffect(() => {
+    if (forgotResendTimer <= 0) return
+    const interval = setInterval(() => {
+      setForgotResendTimer((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [forgotResendTimer])
 
   return (
     <div className="min-h-screen bg-bg-main flex flex-col">
@@ -205,12 +285,13 @@ const LoginPage = () => {
 
                     <div className="flex w-full flex-col gap-4">
                       <div className="text-center">
-                        <Link
-                          href="/forgot-password"
+                        <button
+                          type="button"
+                          onClick={openForgotPassword}
                           className="font-satoshi text-base font-bold not-italic leading-[130%] text-neutral-black_01 underline decoration-solid decoration-auto decoration-skip-ink-none underline-offset-auto [text-underline-position:from-font] hover:opacity-90"
                         >
                           Forgot Password?
-                        </Link>
+                        </button>
                       </div>
 
                       <Button type="submit"
@@ -223,6 +304,79 @@ const LoginPage = () => {
                   </form>
                 </Form>
               </>
+            ) : mode === 'forgot-password' ? (
+              <div className="space-y-8">
+                <div className="flex flex-col items-center text-center">
+                  <div
+                    className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand-100"
+                    aria-hidden
+                  >
+                    <Mail className="h-8 w-8 text-brand-600" strokeWidth={1.75} />
+                  </div>
+                  <h1 className="font-satoshi text-3xl font-bold text-neutral-black_03 mb-3">
+                    Reset Your Password
+                  </h1>
+                  <p className="font-satoshi text-base font-normal leading-[150%] text-gray-600 max-w-sm">
+                    Enter your email and we&apos;ll send you instructions to set a new one.
+                  </p>
+                </div>
+
+                <Form {...forgotForm}>
+                  <form onSubmit={forgotForm.handleSubmit(onForgotSubmit)} className="space-y-6">
+                    <FormField
+                      control={forgotForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItemInput
+                          id="forgot-email"
+                          label="Email"
+                          placeholder="matias@touchzenmedia.com"
+                          type="email"
+                          autoComplete="email"
+                          leftIcon={<Mail className="h-4 w-4" />}
+                          className="h-[var(--height-form-field)]"
+                          {...field}
+                        />
+                      )}
+                    />
+
+                    <p className="text-center font-satoshi text-sm text-gray-600">
+                      {`Didn't get an email?`}{' '}
+                      {forgotResendTimer > 0 ? (
+                        <span className="text-gray-400">Resend in {forgotResendTimer}s</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleForgotResend}
+                          disabled={isForgotResending}
+                          className="font-semibold text-brand-600 underline decoration-solid underline-offset-2 hover:opacity-90 disabled:opacity-60"
+                        >
+                          {isForgotResending ? 'Sending…' : 'Resend'}
+                        </button>
+                      )}
+                    </p>
+
+                    <div className="flex w-full flex-col gap-3 pt-2">
+                      <Button
+                        type="submit"
+                        className="w-full font-satoshi text-base h-12 bg-black text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                        disabled={isForgotSending}
+                      >
+                        {isForgotSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isForgotSending ? 'Sending…' : 'Send Reset Link'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full font-satoshi text-base h-12 rounded-lg border-gray-300 bg-white font-semibold text-neutral-black_03 hover:bg-gray-50"
+                        onClick={handleBackFromForgotPassword}
+                      >
+                        Back to Login
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </div>
             ) : (
               <div className="space-y-6">
                 <button

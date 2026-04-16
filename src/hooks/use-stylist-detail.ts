@@ -21,6 +21,11 @@ export function useStylistDetail(id: string) {
       .getById(id)
       .then((res) => {
         if (cancelled) return
+        if (!res.success || !res.data) {
+          setData(null)
+          setError(null)
+          return
+        }
         setData(res.data)
         setError(null)
       })

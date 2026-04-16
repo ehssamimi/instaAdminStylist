@@ -1,25 +1,12 @@
-import { z } from "zod"
-
 import type { AdminBookingListItem, BookingDetailDto } from "@/models/bookings"
 import {
   normalizeAdminBookingListItem,
   normalizeBookingDetailFromApi,
 } from "@/models/bookings"
 
-export const bookingRowSchema = z.object({
-  id: z.string(),
-  booking_id: z.string(),
-  date: z.string(),
-  stylist: z.string(),
-  customer: z.string(),
-  duration: z.string(),
-  total_cost: z.string(),
-  service_fee: z.string(),
-  call_type: z.string(),
-  status: z.string(),
-})
-
-export type BookingRow = z.infer<typeof bookingRowSchema>
+import type { BookingRow } from "@/lib/booking-schema"
+import { formatDurationLabel } from "@/lib/booking-format"
+export type { BookingRow } from "@/lib/booking-schema"
 
 /** Served from `public/mock/profile.jpg` */
 export const MOCK_PROFILE_IMAGE_PATH = "/mock/profile.jpg"
@@ -29,12 +16,6 @@ const LOREM_BOOKING_DETAILS =
 
 const LOREM_WHAT_YOU_NEED =
   "Bring a few outfit options you already own, good lighting near your device, and a quiet spot for the session. Have a pen ready for notes."
-
-function formatDurationLabel(duration: string): string {
-  return duration.replace(/\bmin\b/i, "Min")
-}
-
-export { formatDurationLabel }
 
 /**
  * Raw list rows in the same shape as the stage admin bookings API (see `AdminBookingListItem`).

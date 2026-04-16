@@ -1,24 +1,13 @@
-"use client"
+'use client'
 
-import { useMemo } from "react"
-import { useParams } from "next/navigation"
+import dynamic from 'next/dynamic'
 
-import { ReportDetailsPageView } from "@/components/report-details-page-view"
-import { getMockReportDetailById } from "@/lib/mock-reports"
+const ReportDetailContent = dynamic(() => import('./_content'), {
+  ssr: false,
+  loading: () => null,
+})
 
 export default function ReportDetailPage() {
-  const params = useParams()
-  const id =
-    typeof params.id === "string" ? params.id : params.id?.[0] ?? ""
-
-  const report = useMemo(() => getMockReportDetailById(id), [id])
-
-  return (
-    <ReportDetailsPageView
-      report={report}
-      backHref="/dashboard/report"
-      backAriaLabel="Back to reports"
-    />
-  )
+  return <ReportDetailContent />
 }
-export const runtime = 'edge';
+export const runtime = 'edge'

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { adminRouteUsesMock } from '@/lib/admin-route-mock'
-import { MOCK_STYLISTS } from '@/mocks/data/stylists'
 import type { StylistsListResponse } from '@/models/stylists'
 
 export async function GET(request: Request) {
   const useLive = process.env.NEXT_PUBLIC_STYLISTS_USE_LIVE_API === 'true'
 
   if (adminRouteUsesMock(useLive)) {
+    const { MOCK_STYLISTS } = await import('@/mocks/data/stylists')
     const { searchParams } = new URL(request.url)
     const page = Number(searchParams.get('page') ?? '1')
     const perPage = Number(searchParams.get('per_page') ?? '10')

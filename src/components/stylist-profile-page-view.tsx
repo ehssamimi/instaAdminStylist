@@ -35,6 +35,7 @@ const RECOMMENDED_SHOP_OPTIONS = [
 type StylingInfoFormValues = {
   fullName: string
   email: string
+  phone: string
   gender: string
   businessName: string
   location: string
@@ -52,6 +53,7 @@ type StylingInfoFormValues = {
 const STYLING_INFO_DEFAULTS: StylingInfoFormValues = {
   fullName: '',
   email: '',
+  phone: '',
   gender: '',
   businessName: '',
   location: '',
@@ -75,6 +77,7 @@ function buildFormValues(stylist: StylistDetailDto): StylingInfoFormValues {
   return {
     fullName: `${stylist.first_name} ${stylist.last_name}`.trim() || '—',
     email: show(stylist.email),
+    phone: show(stylist.phoneNumber),
     gender: show(stylist.gender),
     businessName: show(stylist.businessName),
     location: show(stylist.location),
@@ -302,7 +305,7 @@ export function StylistProfilePageView({
             stylistName={`${stylist.first_name} ${stylist.last_name}`}
             stylistEmail={stylist.email}
             activities={[
-              { label: 'Total Bookings', value: String(stylist.bookings) },
+              { label: 'Completed bookings', value: String(stylist.bookings) },
               { label: 'Total Revenue', value: stylist.total_revenue },
             ]}
           />
@@ -318,6 +321,7 @@ export function StylistProfilePageView({
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
                   <StylingInfoField control={form.control} name="fullName" label="Full Name" />
                   <StylingInfoField control={form.control} name="email" label="Email" />
+                  <StylingInfoField control={form.control} name="phone" label="Phone" />
                   <StylingInfoField control={form.control} name="gender" label="Gender" selectLike />
                   <StylingInfoField control={form.control} name="businessName" label="Business Name" />
                   <StylingInfoField control={form.control} name="location" label="Location" />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { useForm, type Control, type FieldPath } from "react-hook-form"
 import { ChevronDown } from "lucide-react"
@@ -12,10 +12,16 @@ import { StylistProfileHeaderCard } from "@/components/stylist-profile-header-ca
 import { Button } from "@/components/ui/button"
 import { Form, FormField } from "@/components/ui/form"
 import { FormItemInput } from "@/components/ui/form-item-input"
-import { usePendingStylistApplications } from "@/hooks/use-stylist-applications"
-import { MOCK_BOOKINGS } from "@/lib/mock-bookings"
+import {
+  STYLIST_ONBOARDING_SCREEN,
+  STYLIST_ONBOARDING_USER_TYPE,
+  useOnboardingOptions,
+} from "@/hooks/use-onboarding-options"
+import { useStylistDetail } from "@/hooks/use-stylist-detail"
+import type { BookingRow } from "@/lib/booking-schema"
 import { cn } from "@/lib/utils"
-import type { PendingStylistApplication } from "@/models/stylistApplication"
+import type { OnboardingOption } from "@/models/onboardingOptions"
+import type { StylistDetailDto } from "@/models/stylists"
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -23,30 +29,7 @@ const UUID_RE =
 const READ_ONLY_INPUT_CLASS =
   "cursor-default focus:border-gray-300 focus:ring-0 focus:shadow-form-field"
 
-const STYLING_SPECIALITY_OPTIONS = [
-  "Everyday wear",
-  "High fashion/editorial",
-  "Corporate/Professional Attire",
-  "Special events/weddings",
-  "Capsule Wardrobes",
-  "Sustainable/eco-friendly fashion",
-  "Size-inclusive styling",
-  "Close Cleanse",
-  "Seasonal Refresh",
-] as const
-
-const RECOMMENDED_SHOP_OPTIONS = [
-  {
-    id: "macys",
-    label: "Macy's",
-    imageSrc: "/mock/macys.jpg" as const,
-  },
-  {
-    id: "zara",
-    label: "Zara",
-    imageSrc: "/mock/zara.jpg" as const,
-  },
-] as const
+const NO_ONBOARDING_OPTIONS: OnboardingOption[] = []
 
 type StylingInfoFormValues = {
   fullName: string
@@ -87,49 +70,85 @@ function show(v: string | null | undefined): string {
   return s ? s : "—"
 }
 
-function displayName(app: PendingStylistApplication): string {
-  const f = app.firstName ?? app.user?.firstName
-  const l = app.lastName ?? app.user?.lastName
-  const n = [f, l].filter(Boolean).join(" ").trim()
+function displayNameFromDetail(stylist: StylistDetailDto): string {
+  const n = [stylist.first_name, stylist.last_name].filter(Boolean).join(" ").trim()
   return n || "—"
 }
 
-function displayEmail(app: PendingStylistApplication): string {
-  return show(app.email ?? app.user?.email)
-}
-
-function displayExperience(app: PendingStylistApplication): string {
-  const e = app.experience?.trim() ?? ""
+function displayExperienceDetail(stylist: StylistDetailDto): string {
+  const e = stylist.experience?.trim() ?? ""
   if (!e || UUID_RE.test(e)) return "—"
   return e
-}
-
-function instagramOrFacebook(app: PendingStylistApplication): string {
-  const ig = app.instagramHandle?.trim()
-  const fb = app.facebookHandle?.trim()
-  if (ig && fb) return `${ig} · ${fb}`
-  return show(ig || fb)
 }
 
 function normalizeSpecialityKey(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ")
 }
 
-function parseApplicationSpecialities(app: PendingStylistApplication): {
+function specialityDisplay(row: OnboardingOption): string {
+  const t = row.label?.trim()
+  return t || row.option
+}
+
+function isInlineSpecialityOption(row: OnboardingOption): boolean {
+  const m = row.meta
+  if (
+    m &&
+    typeof m === "object" &&
+    "allowsTextInput" in m &&
+    m.allowsTextInput === true
+  ) {
+    return false
+  }
+  return true
+}
+
+function visibleSpecialityRows(rows: OnboardingOption[]): OnboardingOption[] {
+  return rows.filter(isInlineSpecialityOption)
+}
+
+function matchSpecialityRow(
+  rows: OnboardingOption[],
+  item: string
+): OnboardingOption | undefined {
+  const t = item.trim()
+  const lower = t.toLowerCase()
+  const norm = normalizeSpecialityKey(t)
+  const asKey = lower.replace(/\s+/g, "_")
+
+  for (const row of rows) {
+    if (row.key) {
+      const k = row.key.toLowerCase()
+      if (k === lower || k === asKey) return row
+    }
+    if (normalizeSpecialityKey(specialityDisplay(row)) === norm) return row
+    if (normalizeSpecialityKey(row.option) === norm) return row
+    if (row.label && normalizeSpecialityKey(row.label) === norm) return row
+  }
+  return undefined
+}
+
+function shopFormId(row: OnboardingOption): string {
+  return row.key?.trim() ? row.key.toLowerCase() : row.id
+}
+
+function parseSpecialitySelections(
+  rows: OnboardingOption[],
+  rawItems: string[]
+): {
   specialityTags: string[]
   otherSpecialities: string
 } {
-  const raw = app.speciality?.filter(Boolean) ?? []
+  const raw = rawItems.filter(Boolean)
+  const visible = visibleSpecialityRows(rows)
   const tags: string[] = []
   const other: string[] = []
-  const optionByKey = new Map(
-    STYLING_SPECIALITY_OPTIONS.map((o) => [normalizeSpecialityKey(o), o])
-  )
 
   for (const item of raw) {
-    const canonical = optionByKey.get(normalizeSpecialityKey(item))
-    if (canonical) {
-      if (!tags.includes(canonical)) tags.push(canonical)
+    const row = matchSpecialityRow(visible, item)
+    if (row) {
+      const label = specialityDisplay(row)
+      if (!tags.includes(label)) tags.push(label)
     } else {
       other.push(item.trim())
     }
@@ -141,80 +160,49 @@ function parseApplicationSpecialities(app: PendingStylistApplication): {
   }
 }
 
-function parseRecommendShops(app: PendingStylistApplication): {
-  recommendShopIds: string[]
-  otherShops: string
-} {
-  const raw = app.recommendShops?.filter(Boolean) ?? []
-  const selected: string[] = []
-  const other: string[] = []
-
-  for (const item of raw) {
-    const key = item.trim().toLowerCase()
-    const shop = RECOMMENDED_SHOP_OPTIONS.find(
-      (s) =>
-        s.id === key ||
-        key.includes(s.id) ||
-        s.label.toLowerCase().replace(/'/g, "") === key.replace(/'/g, "")
-    )
-    if (shop) {
-      if (!selected.includes(shop.id)) selected.push(shop.id)
-    } else {
-      other.push(item.trim())
-    }
-  }
-
-  return {
-    recommendShopIds: selected,
-    otherShops: other.length ? other.join(", ") : "",
-  }
-}
-
 function buildStylingInfoValues(
-  app: PendingStylistApplication
+  stylist: StylistDetailDto,
+  specialityRows: OnboardingOption[],
+  _shopRows: OnboardingOption[]
 ): StylingInfoFormValues {
-  const sp = parseApplicationSpecialities(app)
-  const shops = parseRecommendShops(app)
-  return {
-    fullName: displayName(app),
-    email: displayEmail(app),
-    gender: show(app.gender),
-    businessName: show(app.businessName),
-    location: show(app.location),
-    linkedInUrl: show(app.linkedInUrl),
-    tiktokHandle: show(app.tiktokHandle),
-    instagramOrFacebook: instagramOrFacebook(app),
-    yearsExperience: displayExperience(app),
-    website: "—",
-    specialityTags: sp.specialityTags,
-    otherSpecialities: sp.otherSpecialities || "—",
-    recommendShopIds: shops.recommendShopIds,
-    otherShops: shops.otherShops || "—",
-  }
-}
-
-function ActivityPlaceholder({
-  label = "No activity yet",
-  value = "—",
-}: {
-  label?: string
-  value?: string
-}) {
-  return (
-    <div className="flex min-h-[112px] min-w-[140px] flex-1 flex-col rounded-xl border border-gray-100 bg-white p-3">
-      <p className="font-satoshi text-sm text-gray-900">{label}</p>
-      <p className="mt-auto flex flex-1 items-end justify-strat font-satoshi text-xl font-normal text-balack">
-        {value}
-      </p>
-    </div>
+  const sp = parseSpecialitySelections(
+    specialityRows,
+    stylist.specialityTags ?? []
   )
+  const otherSpecialityParts = [
+    sp.otherSpecialities,
+    stylist.otherSpecialities?.trim(),
+  ].filter(Boolean)
+  const otherShopParts = [stylist.otherShops?.trim()].filter(Boolean)
+
+  return {
+    fullName: displayNameFromDetail(stylist),
+    email: show(stylist.email),
+    gender: show(stylist.gender),
+    businessName: show(stylist.businessName),
+    location: show(stylist.location),
+    linkedInUrl: show(stylist.linkedInUrl),
+    tiktokHandle: show(stylist.tiktokHandle),
+    instagramOrFacebook: show(stylist.instagramOrFacebook),
+    yearsExperience: displayExperienceDetail(stylist),
+    website: show(stylist.website),
+    specialityTags: sp.specialityTags,
+    otherSpecialities: otherSpecialityParts.length
+      ? otherSpecialityParts.join(", ")
+      : "—",
+    recommendShopIds: stylist.recommendShopIds ?? [],
+    otherShops: otherShopParts.length ? otherShopParts.join(", ") : "—",
+  }
 }
 
 function StylingSpecialityTagGrid({
   control,
+  options,
 }: {
   control: Control<StylingInfoFormValues>
+  options: OnboardingOption[]
 }) {
+  const rows = visibleSpecialityRows(options)
   return (
     <FormField
       control={control}
@@ -226,11 +214,12 @@ function StylingSpecialityTagGrid({
             className="mb-8 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4"
             aria-label="Styling speciality selections"
           >
-            {STYLING_SPECIALITY_OPTIONS.map((option) => {
+            {rows.map((row) => {
+              const option = specialityDisplay(row)
               const isOn = selected.has(option)
               const tags = field.value ?? []
               return (
-                <li key={option} className="min-w-0">
+                <li key={row.id} className="min-w-0">
                   <button
                     type="button"
                     aria-pressed={isOn}
@@ -263,8 +252,10 @@ function StylingSpecialityTagGrid({
 
 function RecommendedShopsGrid({
   control,
+  shops,
 }: {
   control: Control<StylingInfoFormValues>
+  shops: OnboardingOption[]
 }) {
   return (
     <FormField
@@ -278,14 +269,16 @@ function RecommendedShopsGrid({
             className="mb-8 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 lg:grid-cols-7"
             aria-label="Recommended shops"
           >
-            {RECOMMENDED_SHOP_OPTIONS.map((shop) => {
-              const isOn = selected.has(shop.id)
+            {shops.map((shop) => {
+              const id = shopFormId(shop)
+              const isOn = selected.has(id)
+              const label = shop.option
               return (
                 <li key={shop.id} className="min-w-0">
                   <button
                     type="button"
                     aria-pressed={isOn}
-                    aria-label={shop.label}
+                    aria-label={label}
                     className={cn(
                       "flex h-[125px] w-full cursor-pointer items-center justify-center rounded-[8px] px-4 transition-[background-color,border-color]",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-buffer-600/35",
@@ -294,20 +287,26 @@ function RecommendedShopsGrid({
                         : "border border-solid border-[#CECFD2] bg-white"
                     )}
                     onClick={() => {
-                      if (ids.includes(shop.id)) {
-                        field.onChange(ids.filter((id) => id !== shop.id))
+                      if (ids.includes(id)) {
+                        field.onChange(ids.filter((v) => v !== id))
                       } else {
-                        field.onChange([...ids, shop.id])
+                        field.onChange([...ids, id])
                       }
                     }}
                   >
-                    <span className="flex w-full max-w-[7.5rem] items-center justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={shop.imageSrc}
-                        alt=""
-                        className="max-h-14 w-auto max-w-full object-contain"
-                      />
+                    <span className="flex w-full max-w-[7.5rem] flex-col items-center justify-center gap-1">
+                      {shop.imageUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={shop.imageUrl}
+                          alt=""
+                          className="max-h-14 w-auto max-w-full object-contain"
+                        />
+                      ) : (
+                        <span className="px-1 text-center font-satoshi text-xs font-semibold leading-tight text-gray-700">
+                          {label}
+                        </span>
+                      )}
                     </span>
                   </button>
                 </li>
@@ -358,27 +357,69 @@ type StylistProfileViewProps = {
 export function StylistProfileView({ backHref }: StylistProfileViewProps) {
   const params = useParams()
   const id = typeof params.id === "string" ? params.id : params.id?.[0] ?? ""
+  const [fallbackBookings, setFallbackBookings] = useState<BookingRow[]>([])
 
-  const { data: pendingList, isLoading, isError } = usePendingStylistApplications()
+  const { data: stylist, loading: detailLoading, error: detailError } =
+    useStylistDetail(id)
 
-  const application = useMemo(
-    () => pendingList?.find((a) => a.id === id),
-    [pendingList, id]
+  const specialityOptionsQuery = useOnboardingOptions(
+    STYLIST_ONBOARDING_SCREEN.speciality,
+    STYLIST_ONBOARDING_USER_TYPE
   )
+  const shopOptionsQuery = useOnboardingOptions(
+    STYLIST_ONBOARDING_SCREEN.recommendedShops,
+    STYLIST_ONBOARDING_USER_TYPE
+  )
+
+  const specialityRows = specialityOptionsQuery.data
+  const shopRows = shopOptionsQuery.data
+  const optionsLoading =
+    specialityOptionsQuery.isLoading || shopOptionsQuery.isLoading
 
   const form = useForm<StylingInfoFormValues>({
     defaultValues: STYLING_INFO_DEFAULTS,
   })
 
   useEffect(() => {
-    if (application) {
-      form.reset(buildStylingInfoValues(application))
+    if (stylist) {
+      form.reset(
+        buildStylingInfoValues(
+          stylist,
+          specialityRows ?? NO_ONBOARDING_OPTIONS,
+          shopRows ?? NO_ONBOARDING_OPTIONS
+        )
+      )
     } else {
       form.reset(STYLING_INFO_DEFAULTS)
     }
-  }, [application, form])
+  }, [stylist, form, specialityRows, shopRows])
 
-  const profileSrc = application?.imageUrl?.trim()
+  useEffect(() => {
+    if (!stylist || (stylist.booking_history?.length ?? 0) > 0) {
+      setFallbackBookings([])
+      return
+    }
+
+    let cancelled = false
+
+    void (async () => {
+      const { MOCK_BOOKINGS } = await import("@/lib/mock-bookings")
+      if (!cancelled) {
+        setFallbackBookings(MOCK_BOOKINGS)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [stylist])
+
+  const profileSrc = stylist?.profile_picture?.trim()
+
+  const activityBookings =
+    stylist?.booking_history && stylist.booking_history.length > 0
+      ? stylist.booking_history
+      : fallbackBookings
 
   return (
     <div className="-m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
@@ -401,31 +442,35 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
         </div>
       </div>
 
-      {isLoading && (
+      {detailLoading && (
         <p className="font-satoshi text-sm text-black-40">Loading profile…</p>
       )}
 
-      {isError && !isLoading && (
+      {detailError && !detailLoading && (
         <p className="font-satoshi text-sm text-error-600">
-          Could not load applications list.
+          Could not load stylist profile. Check the network or sign in again.
         </p>
       )}
 
-      {!isLoading && !application && !isError && (
-        <p className="font-satoshi text-sm text-black-40">
-          This application was not found in the pending list. Open it from
-          Applications or refresh the list.
-        </p>
+      {!detailLoading && !stylist && !detailError && (
+        <p className="font-satoshi text-sm text-black-40">Stylist not found.</p>
       )}
 
-      {application && (
+      {stylist && (
         <>
           <StylistProfileHeaderCard
             imageUrl={profileSrc}
-            stylistName={displayName(application)}
-            stylistEmail={displayEmail(application)}
+            stylistName={displayNameFromDetail(stylist)}
+            stylistEmail={show(stylist.email)}
+            activities={[
+              { label: "Completed bookings", value: String(stylist.bookings) },
+              { label: "Total Revenue", value: stylist.total_revenue },
+            ]}
           />
-          <StylistBookingActivityCard bookings={MOCK_BOOKINGS} stylistId={id} />
+          <StylistBookingActivityCard
+            bookings={activityBookings}
+            stylistId={id}
+          />
 
           <Form {...form}>
             <div className="flex flex-col gap-6">
@@ -487,7 +532,21 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
               </EachContainer>
 
               <EachContainer title="Styling Speciality">
-                <StylingSpecialityTagGrid control={form.control} />
+                {specialityOptionsQuery.isError && (
+                  <p className="mb-4 font-satoshi text-sm text-error-600">
+                    Could not load speciality options. Check the API or sign in
+                    again.
+                  </p>
+                )}
+                {optionsLoading && !(specialityRows && specialityRows.length) && (
+                  <p className="mb-4 font-satoshi text-sm text-black-40">
+                    Loading speciality options…
+                  </p>
+                )}
+                <StylingSpecialityTagGrid
+                  control={form.control}
+                  options={specialityRows ?? NO_ONBOARDING_OPTIONS}
+                />
                 <StylingInfoField
                   control={form.control}
                   name="otherSpecialities"
@@ -496,7 +555,20 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
               </EachContainer>
 
               <EachContainer title="Recommended Shops">
-                <RecommendedShopsGrid control={form.control} />
+                {shopOptionsQuery.isError && (
+                  <p className="mb-4 font-satoshi text-sm text-error-600">
+                    Could not load recommended shop options.
+                  </p>
+                )}
+                {optionsLoading && !(shopRows && shopRows.length) && (
+                  <p className="mb-4 font-satoshi text-sm text-black-40">
+                    Loading shop options…
+                  </p>
+                )}
+                <RecommendedShopsGrid
+                  control={form.control}
+                  shops={shopRows ?? NO_ONBOARDING_OPTIONS}
+                />
                 <StylingInfoField
                   control={form.control}
                   name="otherShops"
