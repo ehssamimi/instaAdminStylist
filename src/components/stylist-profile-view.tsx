@@ -507,22 +507,37 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageBackHeading title="Stylist Profile" backHref={backHref} />
         <div className="flex flex-wrap gap-3 sm:shrink-0 sm:justify-end">
-          <HeaderActionButton
-            type="button"
-            variant="errorSoft"
-            disabled={actionsDisabled}
-            onClick={() => setRejectModalOpen(true)}
-          >
-            Reject Stylist
-          </HeaderActionButton>
-          <HeaderActionButton
-            type="button"
-            variant="primary"
-            disabled={actionsDisabled}
-            onClick={handleApprove}
-          >
-            {approveSubmitting ? "Approving…" : "Approve Stylist"}
-          </HeaderActionButton>
+          {stylingFormLocked ? (
+            <HeaderActionButton
+              type="button"
+              variant="primary"
+              disabled={!stylist || detailLoading}
+              onClick={() => {
+                console.log(form.getValues())
+              }}
+            >
+              Update
+            </HeaderActionButton>
+          ) : (
+            <>
+              <HeaderActionButton
+                type="button"
+                variant="errorSoft"
+                disabled={actionsDisabled}
+                onClick={() => setRejectModalOpen(true)}
+              >
+                Reject Stylist
+              </HeaderActionButton>
+              <HeaderActionButton
+                type="button"
+                variant="primary"
+                disabled={actionsDisabled}
+                onClick={handleApprove}
+              >
+                {approveSubmitting ? "Approving…" : "Approve Stylist"}
+              </HeaderActionButton>
+            </>
+          )}
         </div>
       </div>
 
