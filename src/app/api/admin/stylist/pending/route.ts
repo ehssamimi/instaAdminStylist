@@ -13,10 +13,15 @@ export async function GET(request: Request) {
     )
   }
 
-  const url = `${apiBase}/admin/stylist/pending`
+  const incoming = new URL(request.url)
+  const target = new URL(`${apiBase}/admin/stylist/pending`)
+  incoming.searchParams.forEach((value, key) => {
+    target.searchParams.set(key, value)
+  })
+
   const auth = request.headers.get('authorization')
 
-  const res = await fetch(url, {
+  const res = await fetch(target.toString(), {
     method: 'GET',
     headers: {
       ...(auth ? { Authorization: auth } : {}),

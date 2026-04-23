@@ -74,13 +74,15 @@ export function DetailInfoCard({
         ) : null}
         <div className="min-w-0 flex-1">
           <p className="font-satoshi text-xs font-bold text-black">{label}</p>
-          <div className=" mt-1 flex min-w-0 items-center gap-1 font-satoshi text-sm font-normal text-gray-700">
+          <div className=" mt-1 flex min-w-0 items-start gap-1 font-satoshi text-sm font-normal text-gray-700">
             {valueIcon ? (
-              <span className="flex shrink-0 items-center text-gray-400 [&_svg]:size-4">
+              <span className="mt-0.5 flex shrink-0 items-center text-gray-400 [&_svg]:size-4">
                 {valueIcon}
               </span>
             ) : null}
-            <span className="min-w-0">{value}</span>
+            <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
+              {value}
+            </span>
           </div>
         </div>
       </div>

@@ -26,6 +26,10 @@ export type StylistDetailsApiDto = {
   website?: string | null
   recommendShops?: unknown
   booking_history?: BookingRowDto[]
+  status?: string | null
+  /** Application verification lifecycle; drives admin styling form editability. */
+  verificationStatus?: string | null
+  verification_status?: string | null
 }
 
 export interface StylistRowDto {
@@ -60,6 +64,12 @@ export interface StylistDetailDto extends StylistRowDto {
   booking_history: BookingRowDto[]
   isVerified?: boolean
   available?: boolean
+  status?: string | null
+  /**
+   * From `GET /api/stylist/details/:id`. Styling form is editable only when `APPROVED`.
+   * Other values (`null`, `PENDING_REVIEW`, `REJECTED`) keep the form read-only.
+   */
+  verificationStatus?: string | null
 }
 
 export interface StylistsListResponse {
@@ -176,6 +186,8 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
   const image =
     coalesceStr(raw.imageUrl) ?? coalesceStr(raw.profile_picture) ?? null
   const bookings = raw.totalCompletedBookings ?? 0
+  const verificationStatusRaw =
+    raw.verificationStatus ?? raw.verification_status
 
   return {
     id: String(raw.id),
@@ -206,6 +218,18 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
     booking_history: Array.isArray(raw.booking_history) ? raw.booking_history : [],
     isVerified: raw.isVerified,
     available: raw.available,
+    status:
+      raw.status === undefined || raw.status === null
+        ? raw.status
+        : typeof raw.status === 'string'
+          ? raw.status
+          : String(raw.status),
+    verificationStatus:
+      verificationStatusRaw === undefined || verificationStatusRaw === null
+        ? verificationStatusRaw
+        : typeof verificationStatusRaw === 'string'
+          ? verificationStatusRaw
+          : String(verificationStatusRaw),
   }
 }
 

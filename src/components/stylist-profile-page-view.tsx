@@ -344,20 +344,20 @@ export function StylistProfilePageView({
 
               <EachContainer title="Styling Speciality">
                 <StylingSpecialityTagGrid control={form.control} />
-                <StylingInfoField
+                {/* <StylingInfoField
                   control={form.control}
                   name="otherSpecialities"
                   label="Other Specialities"
-                />
+                /> */}
               </EachContainer>
 
               <EachContainer title="Recommended Shops">
                 <RecommendedShopsGrid control={form.control} />
-                <StylingInfoField
+                {/* <StylingInfoField
                   control={form.control}
                   name="otherShops"
                   label="Other Shops"
-                />
+                /> */}
               </EachContainer>
             </div>
           </Form>

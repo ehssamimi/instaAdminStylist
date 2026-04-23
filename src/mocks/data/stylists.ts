@@ -220,5 +220,11 @@ export function getMockStylistDetail(id: string): StylistDetailDto | null {
     recommendShopIds: overrides.recommendShopIds ?? [],
     otherShops: overrides.otherShops ?? null,
     booking_history: stylistBookings,
+    status:
+      overrides.status !== undefined ? overrides.status : 'active',
+    verificationStatus:
+      overrides.verificationStatus !== undefined
+        ? overrides.verificationStatus
+        : 'APPROVED',
   }
 }

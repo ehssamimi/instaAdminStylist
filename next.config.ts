@@ -76,6 +76,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  /**
+   * Unhandled /api/... fall back to the real API (src/lib/backend-api-url.ts).
+   * App Router handlers under src/app/api (e.g. route.ts) run first, not this pass-through.
+   */
   async rewrites() {
     if (!backendOrigin) {
       return { fallback: [] };

@@ -87,8 +87,8 @@ export interface AdminBookingDetailApi {
   stringId: string
   status: string
   date: string
-  customer: { name?: string; email?: string }
-  stylist: { name?: string; email?: string }
+  customer: { name?: string; email?: string; profilePicture?: string | null }
+  stylist: { name?: string; email?: string; profilePicture?: string | null }
   callDuration: number
   currency: string
   totalCost: number | null
@@ -109,8 +109,10 @@ export interface BookingDetailDto {
   dateRaw: string
   customerName: string
   customerEmail: string
+  customerProfilePicture: string | null
   stylistName: string
   stylistEmail: string
+  stylistProfilePicture: string | null
   durationLabel: string
   currency: string
   totalCostDisplay: string
@@ -173,8 +175,15 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
 
   const customerName = typeof c.name === 'string' && c.name.trim() ? c.name : '—'
   const customerEmail = typeof c.email === 'string' && c.email.trim() ? c.email : '—'
+  const customerPicRaw = c.profilePicture ?? c.profile_picture
+  const customerProfilePicture =
+    typeof customerPicRaw === 'string' && customerPicRaw.trim() ? customerPicRaw.trim() : null
+
   const stylistName = typeof s.name === 'string' && s.name.trim() ? s.name : '—'
   const stylistEmail = typeof s.email === 'string' && s.email.trim() ? s.email : '—'
+  const stylistPicRaw = s.profilePicture ?? s.profile_picture
+  const stylistProfilePicture =
+    typeof stylistPicRaw === 'string' && stylistPicRaw.trim() ? stylistPicRaw.trim() : null
 
   const currency = typeof o.currency === 'string' && o.currency.trim() ? o.currency.trim() : 'USD'
 
@@ -225,8 +234,10 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
     dateRaw,
     customerName,
     customerEmail,
+    customerProfilePicture,
     stylistName,
     stylistEmail,
+    stylistProfilePicture,
     durationLabel,
     currency,
     totalCostDisplay: fmtMoney(o.totalCost),

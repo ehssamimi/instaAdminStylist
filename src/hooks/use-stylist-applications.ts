@@ -1,38 +1,34 @@
 import { useQuery } from "@tanstack/react-query"
-import { stylistApplicationsApi } from "@/lib/api"
+import {
+  stylistApplicationsApi,
+  type StylistApplicationsQueryParams,
+} from "@/lib/api"
+import { getMockStylistApplicationsPage } from "@/lib/mock-stylist-applications"
 
-const PENDING_QUERY_KEY = ["stylist-applications", "pending"] as const
-
-export function usePendingStylistApplications() {
-  return useQuery({
-    queryKey: PENDING_QUERY_KEY,
-    queryFn: async () => {
-      const loadMockApplications = async () => {
-        const { MOCK_PENDING_STYLIST_APPLICATIONS } = await import(
-          "@/lib/mock-stylist-applications"
-        )
-        return MOCK_PENDING_STYLIST_APPLICATIONS
-      }
-
-      try {
-        const applications = await stylistApplicationsApi.getPending()
-        if (applications.length > 0) {
-          const mockApplications = await loadMockApplications()
-          const ids = new Set(applications.map((item) => item.id))
-          const missingMocks = mockApplications.filter(
-            (item) => !ids.has(item.id)
-          )
-          return [...applications, ...missingMocks]
-        }
-      } catch {
-        // Keep dashboard previewable when backend data is unavailable.
-      }
-
-      return loadMockApplications()
-    },
-    staleTime: 120000,
-    gcTime: 120000,
-  })
+export function stylistApplicationsQueryKey(
+  params: StylistApplicationsQueryParams
+) {
+  return [
+    "stylist-applications",
+    "pending",
+    params.status,
+    params.page,
+    params.pageSize,
+    params.search ?? "",
+  ] as const
 }
 
-export { PENDING_QUERY_KEY }
+export function useStylistApplications(params: StylistApplicationsQueryParams) {
+  return useQuery({
+    queryKey: stylistApplicationsQueryKey(params),
+    queryFn: async () => {
+      try {
+        return await stylistApplicationsApi.getPendingList(params)
+      } catch {
+        return getMockStylistApplicationsPage(params)
+      }
+    },
+    staleTime: 60000,
+    gcTime: 300000,
+  })
+}

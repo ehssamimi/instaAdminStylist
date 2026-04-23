@@ -96,7 +96,7 @@ export function BookingDetailsPageView({
         <BookingDetailsPageSkeleton />
       ) : booking ? (
         <>
-          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2">
+          <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2">
             <div className="flex flex-col gap-0.5">
               <p className="font-satoshi font-bold text-sm text-gray-900">
                 ID: {booking.stringId}
@@ -119,7 +119,12 @@ export function BookingDetailsPageView({
             <DetailInfoCard
               label="Customer Name"
               value={booking.customerName}
-              leading={<NameAvatar name={booking.customerName} />}
+              leading={
+                <NameAvatar
+                  name={booking.customerName}
+                  imageSrc={booking.customerProfilePicture}
+                />
+              }
             />
             <DetailInfoCard
               label="Customer Email"
@@ -129,7 +134,12 @@ export function BookingDetailsPageView({
             <DetailInfoCard
               label="Stylist Name"
               value={booking.stylistName}
-              leading={<NameAvatar name={booking.stylistName} />}
+              leading={
+                <NameAvatar
+                  name={booking.stylistName}
+                  imageSrc={booking.stylistProfilePicture}
+                />
+              }
             />
             <DetailInfoCard
               label="Stylist Email"

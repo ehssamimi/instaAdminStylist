@@ -70,7 +70,7 @@ export function AppSidebar({
         </SidebarMenu> */}
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup data-nav-main>
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
               {navItems.map((item) => {
@@ -78,7 +78,12 @@ export function AppSidebar({
                 const isActive = href === activeHref
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild tooltip={item.title} isActive={isActive} className="py-6">
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.title}
+                      isActive={isActive}
+                      className="gap-3 py-6 font-normal !text-gray-500 data-[active=true]:!font-medium data-[active=true]:!text-neutral-black_03 [&>svg]:!size-6"
+                    >
                       <Link href={href} prefetch>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>

@@ -1,68 +1,33 @@
-/** Nested user on pending stylist application (API shape). */
-export interface PendingStylistUser {
-  id: string
-  email: string
-  password?: string
-  authProvider?: string
-  providerId?: string | null
-  type?: string
-  isActive?: boolean
-  isVerified?: boolean
-  emailVerificationOtp?: string | null
-  emailVerificationOtpExpires?: string | null
-  passwordResetToken?: string | null
-  passwordResetExpires?: string | null
-  firstName: string | null
-  lastName: string | null
-  phoneNumber?: string | null
-  phoneCountryCode?: string | null
-  isPhoneVerified?: boolean
-  phoneVerifiedAt?: string | null
-  createdAt?: string
-  updatedAt?: string
-}
+/** Application status returned by GET /admin/stylist/pending */
+export type StylistApplicationApiStatus =
+  | "PENDING_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
 
-/** Single item from GET /admin/stylist/pending */
-export interface PendingStylistApplication {
-  id: string
+/** Single row from `data[]` for GET /admin/stylist/pending */
+export interface StylistApplicationListItem {
   userId: string
-  businessName: string | null
-  gender: string | null
-  location: string | null
-  instagramHandle: string | null
-  facebookHandle: string | null
-  tiktokHandle: string | null
-  linkedInUrl: string | null
-  /** Reference UUID (catalog), not a year count */
-  experience: string | null
-  platformSource: string | null
-  pushNotification: boolean | null
-  speciality: string[]
-  recommendShops: string[]
-  bio: string | null
-  imageUrl: string | null
-  isVerified: boolean
-  available: boolean
-  bookingNotification: boolean
-  bookingSms: boolean
-  bookingEmail: boolean
-  bookingReminderNotification: boolean
-  bookingReminderSms: boolean
-  bookingReminderEmail: boolean
-  messageNotification: boolean
-  messageSms: boolean
-  messageEmail: boolean
-  reviewNotification: boolean
-  reviewSms: boolean
-  reviewEmail: boolean
-  availabilityNotification: boolean
-  languageSpoken: string[]
-  createdAt: string
-  updatedAt: string
-  user: PendingStylistUser
   firstName: string | null
   lastName: string | null
-  email: string | null
+  yearsOfExperience: number | null
+  /** Comma-separated labels from API */
+  speciality: string | null
+  status: StylistApplicationApiStatus
+  rejectionReason: string | null
+  updatedAt: string
+  /** Optional email when API includes it (for search) */
+  email?: string | null
 }
 
-export type PendingStylistApplicationsResponse = PendingStylistApplication[]
+export interface StylistApplicationsListMeta {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+/** Normalized list response (after parsing various API envelopes). */
+export interface StylistApplicationsListResult {
+  data: StylistApplicationListItem[]
+  meta: StylistApplicationsListMeta
+}

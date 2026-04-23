@@ -1,12 +1,15 @@
-import { LayoutPanelLeft, ShieldEllipsis, LayoutDashboard, Package, Users, Coins, User ,FileText,
+import type { ComponentType, SVGProps } from "react"
+import { LayoutPanelLeft, ShieldEllipsis, LayoutDashboard, Package, Coins, FileText,
    Calendar,
-  Scissors,
   Star,
   DollarSign,
   Percent,
-  Bell,
-
+  Medal,
+  Banknote,
 } from "lucide-react"
+import { CustomersNavIcon } from "@/components/customers-nav-icon"
+import { ReportsNavIcon } from "@/components/reports-nav-icon"
+import { StylistsNavIcon } from "@/components/stylists-nav-icon"
 
 export interface NavMainItem {
   title: string
@@ -15,8 +18,8 @@ export interface NavMainItem {
   icon?: NavIcon
 }
 
-// Infer the shared icon component type from one imported icon
-export type NavIcon = typeof LayoutPanelLeft
+// Lucide icons or custom SVG components used in the sidebar
+export type NavIcon = ComponentType<SVGProps<SVGSVGElement>>
 
 // Central navigation definition so both sidebar & header can stay in sync.
 export const navMainAdmin: NavMainItem[] = [
@@ -36,13 +39,13 @@ export const navMainAdmin: NavMainItem[] = [
     title: "Stylists",
     pageTitle: "Stylists",
     url: "/dashboard/stylists",
-    icon: Scissors,
+    icon: StylistsNavIcon,
   },
   {
     title: "Featured Stylists",
     pageTitle: "Featured Stylists",
     url: "/dashboard/featured-stylists",
-    icon: Star,
+    icon: Medal,
   },
   {
     title: "Applications",
@@ -60,7 +63,7 @@ export const navMainAdmin: NavMainItem[] = [
     title: "Revenue",
     pageTitle: "Revenue",
     url: "/dashboard/revenue",
-    icon: DollarSign,
+    icon: Banknote,
   },
   {
     title: "Fees",
@@ -72,13 +75,13 @@ export const navMainAdmin: NavMainItem[] = [
     title: "Customers",
     pageTitle: "Customers",
     url: "/dashboard/customers",
-    icon: Users,
+    icon: CustomersNavIcon,
   },
   {
     title: "Reports",
     pageTitle: "Reports",
     url: "/dashboard/report",
-    icon: Bell,
+    icon: ReportsNavIcon,
   },
   // {
   //   title: "Claims",

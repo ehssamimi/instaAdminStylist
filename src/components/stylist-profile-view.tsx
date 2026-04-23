@@ -1,15 +1,17 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useForm, type Control, type FieldPath } from "react-hook-form"
 import { ChevronDown } from "lucide-react"
 
 import { EachContainer } from "@/components/each-container"
+import { HeaderActionButton } from "@/components/header-action-button"
 import { PageBackHeading } from "@/components/page-back-heading"
+import { RejectStylistModal } from "@/components/reject-stylist-modal"
 import { StylistBookingActivityCard } from "@/components/stylist-booking-activity-card"
 import { StylistProfileHeaderCard } from "@/components/stylist-profile-header-card"
-import { Button } from "@/components/ui/button"
+import { StylistProfilePageSkeleton } from "@/components/stylist-profile-page-skeleton"
 import { Form, FormField } from "@/components/ui/form"
 import { FormItemInput } from "@/components/ui/form-item-input"
 import {
@@ -19,7 +21,9 @@ import {
 } from "@/hooks/use-onboarding-options"
 import { useStylistDetail } from "@/hooks/use-stylist-detail"
 import type { BookingRow } from "@/lib/booking-schema"
+import { stylistApplicationsApi } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 import type { OnboardingOption } from "@/models/onboardingOptions"
 import type { StylistDetailDto } from "@/models/stylists"
 
@@ -88,6 +92,16 @@ function normalizeSpecialityKey(s: string): string {
 function specialityDisplay(row: OnboardingOption): string {
   const t = row.label?.trim()
   return t || row.option
+}
+
+function messageFromApiError(error: unknown): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const data = (error as { response?: { data?: { message?: string } } })
+      .response?.data
+    if (data?.message && typeof data.message === "string") return data.message
+  }
+  if (error instanceof Error) return error.message
+  return "Something went wrong."
 }
 
 function isInlineSpecialityOption(row: OnboardingOption): boolean {
@@ -198,9 +212,11 @@ function buildStylingInfoValues(
 function StylingSpecialityTagGrid({
   control,
   options,
+  disabled = false,
 }: {
   control: Control<StylingInfoFormValues>
   options: OnboardingOption[]
+  disabled?: boolean
 }) {
   const rows = visibleSpecialityRows(options)
   return (
@@ -222,15 +238,18 @@ function StylingSpecialityTagGrid({
                 <li key={row.id} className="min-w-0">
                   <button
                     type="button"
+                    disabled={disabled}
                     aria-pressed={isOn}
                     className={cn(
                       "flex  h-[54px] w-full cursor-pointer items-center justify-center rounded-lg border border-solid bg-white px-0 py-3 text-center font-satoshi  font-bold shadow-form-field transition-[color,border-color] select-none",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25",
+                      "disabled:cursor-not-allowed disabled:opacity-60",
                       isOn
                         ? "border-brand-600 text-brand-600"
                         : "border-gray-300 text-gray-500"
                     )}
                     onClick={() => {
+                      if (disabled) return
                       if (tags.includes(option)) {
                         field.onChange(tags.filter((t) => t !== option))
                       } else {
@@ -253,9 +272,11 @@ function StylingSpecialityTagGrid({
 function RecommendedShopsGrid({
   control,
   shops,
+  disabled = false,
 }: {
   control: Control<StylingInfoFormValues>
   shops: OnboardingOption[]
+  disabled?: boolean
 }) {
   return (
     <FormField
@@ -277,16 +298,19 @@ function RecommendedShopsGrid({
                 <li key={shop.id} className="min-w-0">
                   <button
                     type="button"
+                    disabled={disabled}
                     aria-pressed={isOn}
                     aria-label={label}
                     className={cn(
                       "flex h-[125px] w-full cursor-pointer items-center justify-center rounded-[8px] px-4 transition-[background-color,border-color]",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-buffer-600/35",
+                      "disabled:cursor-not-allowed disabled:opacity-60",
                       isOn
                         ? "border border-solid border-brand-300 bg-brand-50"
                         : "border border-solid border-[#CECFD2] bg-white"
                     )}
                     onClick={() => {
+                      if (disabled) return
                       if (ids.includes(id)) {
                         field.onChange(ids.filter((v) => v !== id))
                       } else {
@@ -324,11 +348,13 @@ function StylingInfoField({
   name,
   label,
   selectLike = false,
+  disabled = false,
 }: {
   control: Control<StylingInfoFormValues>
   name: FieldPath<StylingInfoFormValues>
   label: string
   selectLike?: boolean
+  disabled?: boolean
 }) {
   return (
     <FormField
@@ -337,13 +363,17 @@ function StylingInfoField({
       render={({ field }) => (
         <FormItemInput
           label={label}
-          className={READ_ONLY_INPUT_CLASS}
+          className={cn(
+            READ_ONLY_INPUT_CLASS,
+            disabled && "cursor-not-allowed opacity-80"
+          )}
           rightIcon={
             selectLike ? (
               <ChevronDown className="size-4 text-gray-500" aria-hidden />
             ) : undefined
           }
           {...field}
+          disabled={disabled}
         />
       )}
     />
@@ -356,8 +386,12 @@ type StylistProfileViewProps = {
 
 export function StylistProfileView({ backHref }: StylistProfileViewProps) {
   const params = useParams()
+  const router = useRouter()
   const id = typeof params.id === "string" ? params.id : params.id?.[0] ?? ""
   const [fallbackBookings, setFallbackBookings] = useState<BookingRow[]>([])
+  const [rejectModalOpen, setRejectModalOpen] = useState(false)
+  const [approveSubmitting, setApproveSubmitting] = useState(false)
+  const [rejectSubmitting, setRejectSubmitting] = useState(false)
 
   const { data: stylist, loading: detailLoading, error: detailError } =
     useStylistDetail(id)
@@ -421,30 +455,78 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
       ? stylist.booking_history
       : fallbackBookings
 
+  /** Styling fields are editable only after verification is `APPROVED`. */
+  const stylingFormLocked = stylist
+    ? stylist.verificationStatus !== "APPROVED"
+    : false
+
+  const actionsDisabled =
+    !id || detailLoading || !stylist || approveSubmitting || rejectSubmitting
+
+  async function handleApprove() {
+    if (!id || approveSubmitting) return
+    setApproveSubmitting(true)
+    try {
+      await stylistApplicationsApi.approve(id)
+      toast.success("Stylist approved.")
+      router.push(backHref)
+    } catch (e) {
+      toast.error(messageFromApiError(e))
+    } finally {
+      setApproveSubmitting(false)
+    }
+  }
+
   return (
     <div className="-m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
+      <RejectStylistModal
+        open={rejectModalOpen}
+        onOpenChange={setRejectModalOpen}
+        isSubmitting={rejectSubmitting}
+        onConfirm={async ({ reason, attachment }) => {
+          if (!id) return
+          setRejectSubmitting(true)
+          try {
+            const fd = new FormData()
+            fd.append("reason", reason)
+            if (attachment) {
+              fd.append("attachment", attachment)
+            }
+            await stylistApplicationsApi.reject(id, fd)
+            toast.success("Application rejected.")
+            setRejectModalOpen(false)
+            router.push(backHref)
+          } catch (e) {
+            toast.error(messageFromApiError(e))
+          } finally {
+            setRejectSubmitting(false)
+          }
+        }}
+      />
+
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageBackHeading title="Stylist Profile" backHref={backHref} />
         <div className="flex flex-wrap gap-3 sm:shrink-0 sm:justify-end">
-          <Button
+          <HeaderActionButton
             type="button"
-            variant="outline"
-            className="font-satoshi rounded-lg border-error-300 bg-white text-error-600 hover:bg-error-50 hover:text-error-600"
+            variant="errorSoft"
+            disabled={actionsDisabled}
+            onClick={() => setRejectModalOpen(true)}
           >
             Reject Stylist
-          </Button>
-          <Button
+          </HeaderActionButton>
+          <HeaderActionButton
             type="button"
-            className="font-satoshi rounded-lg bg-black-100 text-white hover:bg-neutral-black_02 hover:text-white"
+            variant="primary"
+            disabled={actionsDisabled}
+            onClick={handleApprove}
           >
-            Approve Stylist
-          </Button>
+            {approveSubmitting ? "Approving…" : "Approve Stylist"}
+          </HeaderActionButton>
         </div>
       </div>
 
-      {detailLoading && (
-        <p className="font-satoshi text-sm text-black-40">Loading profile…</p>
-      )}
+      {detailLoading && <StylistProfilePageSkeleton />}
 
       {detailError && !detailLoading && (
         <p className="font-satoshi text-sm text-error-600">
@@ -467,10 +549,10 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
               { label: "Total Revenue", value: stylist.total_revenue },
             ]}
           />
-          <StylistBookingActivityCard
+          {/* <StylistBookingActivityCard
             bookings={activityBookings}
             stylistId={id}
-          />
+          /> */}
 
           <Form {...form}>
             <div className="flex flex-col gap-6">
@@ -480,53 +562,63 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
                     control={form.control}
                     name="fullName"
                     label="Full Name"
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="email"
                     label="Email"
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="gender"
                     label="Gender"
                     selectLike
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="businessName"
                     label="Business Name"
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="location"
                     label="Location"
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="linkedInUrl"
                     label="LinkedIn Url"
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="tiktokHandle"
                     label="Tik Tok Handle"
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="instagramOrFacebook"
                     label="Instagram or Facebook Handle"
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="yearsExperience"
                     label="Years of Experience"
                     selectLike
+                    disabled={stylingFormLocked}
                   />
                   <StylingInfoField
                     control={form.control}
                     name="website"
                     label="Website"
+                    disabled={stylingFormLocked}
                   />
                 </div>
               </EachContainer>
@@ -546,12 +638,13 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
                 <StylingSpecialityTagGrid
                   control={form.control}
                   options={specialityRows ?? NO_ONBOARDING_OPTIONS}
+                  disabled={stylingFormLocked}
                 />
-                <StylingInfoField
+                {/* <StylingInfoField
                   control={form.control}
                   name="otherSpecialities"
                   label="Other Specialities"
-                />
+                /> */}
               </EachContainer>
 
               <EachContainer title="Recommended Shops">
@@ -568,12 +661,13 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
                 <RecommendedShopsGrid
                   control={form.control}
                   shops={shopRows ?? NO_ONBOARDING_OPTIONS}
+                  disabled={stylingFormLocked}
                 />
-                <StylingInfoField
+                {/* <StylingInfoField
                   control={form.control}
                   name="otherShops"
                   label="Other Shops"
-                />
+                /> */}
               </EachContainer>
             </div>
           </Form>

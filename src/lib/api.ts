@@ -44,9 +44,19 @@ import {
   StylistsListResponse,
 } from '@/models/stylists'
 import { DuplicatedProductsResponse } from '@/models/duplicatedProducts'
-import { PendingStylistApplicationsResponse } from '@/models/stylistApplication'
+import type { StylistApplicationsListResult } from '@/models/stylistApplication'
+import { normalizeStylistApplicationsListResponse } from '@/lib/stylist-applications-normalize'
 import type { AdminFeeDto, AdminFeePutItem } from '@/models/fees'
-import type { ReportStatus } from '@/models/reports'
+import type { AdminReportDetail, ReportStatus } from '@/models/reports'
+import {
+  normalizeFeaturedStylistsListResponse,
+  type FeaturedStylistsListNormalized,
+} from '@/lib/featured-stylists-normalize'
+import {
+  normalizeAdminReportDetailFromApi,
+  normalizeAdminReportsListResponse,
+  type AdminReportsListNormalized,
+} from '@/lib/reports-normalize'
 import type { OnboardingOption } from '@/models/onboardingOptions'
 
 // Generic API utility functions
@@ -80,6 +90,22 @@ export const api = {
     const response: AxiosResponse<T> = await apiClient.delete(url, config)
     return response.data
   },
+}
+
+/** Best-effort message from API/axios errors. */
+export function getApiErrorMessage(e: unknown): string {
+  if (typeof e === 'object' && e !== null && 'response' in e) {
+    const data = (e as { response?: { data?: unknown } }).response?.data
+    if (typeof data === 'object' && data !== null) {
+      const rec = data as Record<string, unknown>
+      const m = rec.message
+      if (typeof m === 'string' && m.trim()) return m.trim()
+      const err = rec.error
+      if (typeof err === 'string' && err.trim()) return err.trim()
+    }
+  }
+  if (e instanceof Error && e.message) return e.message
+  return 'Request failed. Please try again.'
 }
 
 // Authentication specific API calls
@@ -228,22 +254,62 @@ export const bookingsApi = {
   },
 }
 
-/** List reports — `GET /api/admin/reports` (proxied). Use when the backend payload is ready; the UI currently uses mock data. */
+/** List reports — `GET /api/admin/reports` (proxied). Supports one or more `status` query params. */
 export const reportsApi = {
   getList: async (params: {
-    status: ReportStatus
+    status: ReportStatus | ReportStatus[]
     search?: string
     page?: number
     pageSize?: number
-  }) => {
-    return api.get<unknown>('/admin/reports', {
-      params: {
-        status: params.status,
-        search: params.search,
-        page: params.page,
-        pageSize: params.pageSize,
-      },
-    })
+  }): Promise<AdminReportsListNormalized> => {
+    const statuses = Array.isArray(params.status) ? params.status : [params.status]
+    const usp = new URLSearchParams()
+    for (const s of statuses) {
+      usp.append('status', s)
+    }
+    if (params.page != null) usp.set('page', String(params.page))
+    if (params.pageSize != null) usp.set('pageSize', String(params.pageSize))
+    if (params.search?.trim()) usp.set('search', params.search.trim())
+    const qs = usp.toString()
+    const raw = await api.get<unknown>(
+      `/admin/reports${qs ? `?${qs}` : ''}`
+    )
+    return normalizeAdminReportsListResponse(raw)
+  },
+
+  getById: async (id: string): Promise<AdminReportDetail | null> => {
+    const raw = await api.get<unknown>(
+      `/admin/reports/${encodeURIComponent(id)}`
+    )
+    return normalizeAdminReportDetailFromApi(raw)
+  },
+
+  ignore: async (reportId: string) => {
+    await api.post(
+      `/admin/reports/${encodeURIComponent(reportId)}/ignore`,
+      {}
+    )
+  },
+
+  reopen: async (reportId: string) => {
+    await api.post(
+      `/admin/reports/${encodeURIComponent(reportId)}/reopen`,
+      {}
+    )
+  },
+
+  removeUser: async (reportId: string) => {
+    await api.post(
+      `/admin/reports/${encodeURIComponent(reportId)}/remove-user`,
+      {}
+    )
+  },
+
+  restoreUser: async (reportId: string) => {
+    await api.post(
+      `/admin/reports/${encodeURIComponent(reportId)}/restore-user`,
+      {}
+    )
   },
 }
 
@@ -251,6 +317,52 @@ export const stylistsApi = {
   getList: async (params?: { page?: number; per_page?: number; search?: string }) => {
     return api.get<StylistsListResponse>('/admin/stylists', { params })
   },
+  /**
+   * Admin featured list — `GET /api/admin/featured-stylists` (e.g. `?page=1&limit=10`).
+   * Optional `search` is forwarded if the backend supports it.
+   */
+  getFeaturedList: async (params?: {
+    page?: number
+    limit?: number
+    search?: string
+  }): Promise<FeaturedStylistsListNormalized> => {
+    const raw = await api.get<unknown>('/admin/featured-stylists', {
+      params: {
+        page: params?.page,
+        limit: params?.limit,
+        ...(params?.search?.trim() ? { search: params.search.trim() } : {}),
+      },
+    })
+    return normalizeFeaturedStylistsListResponse(raw)
+  },
+
+  /** `POST /api/admin/featured-stylists` — add a stylist to the featured list. */
+  addFeatured: async (body: { stylistId: string }) => {
+    return api.post<unknown>('/admin/featured-stylists', body)
+  },
+
+  /** `DELETE /api/admin/featured-stylists/:id` — removes from featured list (not the account). */
+  removeFeatured: async (id: string): Promise<{ success: boolean }> => {
+    const data = await api.delete<unknown>(
+      `/admin/featured-stylists/${encodeURIComponent(id)}`
+    )
+    if (data != null && typeof data === 'object' && 'success' in data) {
+      return { success: Boolean((data as { success: boolean }).success) }
+    }
+    return { success: true }
+  },
+
+  /**
+   * Set display order for a featured stylist (after drag-and-drop).
+   * `PUT /api/admin/featured-stylists/:id/order` with `{ order }` (1-based).
+   */
+  updateFeaturedOrder: async (id: string, order: number) => {
+    return api.put<unknown>(
+      `/admin/featured-stylists/${encodeURIComponent(id)}/order`,
+      { order }
+    )
+  },
+
   /** Live stylist profile: `GET /api/stylist/details/:id` (proxied). */
   getById: async (id: string): Promise<StylistDetailResponse> => {
     const raw = await api.get<unknown>(`/stylist/details/${id}`)
@@ -316,9 +428,44 @@ export const categoriesApi = {
   },
 }
 
+export type StylistApplicationsQueryParams = {
+  status: 'review' | 'approved' | 'rejected'
+  page: number
+  pageSize: number
+  search?: string
+}
+
 export const stylistApplicationsApi = {
-  getPending: async () => {
-    return api.get<PendingStylistApplicationsResponse>('/admin/stylist/pending')
+  getPendingList: async (
+    params: StylistApplicationsQueryParams
+  ): Promise<StylistApplicationsListResult> => {
+    const raw = await api.get<unknown>('/admin/stylist/pending', {
+      params: {
+        status: params.status,
+        page: params.page,
+        pageSize: params.pageSize,
+        ...(params.search?.trim() ? { search: params.search.trim() } : {}),
+      },
+    })
+    return normalizeStylistApplicationsListResponse(raw)
+  },
+
+  approve: async (stylistId: string) => {
+    return api.post<unknown>(`/admin/stylist/${stylistId}/approve`, {})
+  },
+
+  reject: async (stylistId: string, formData: FormData) => {
+    return api.post<unknown>(`/admin/stylist/${stylistId}/reject`, formData, {
+      transformRequest: [
+        (data, headers) => {
+          if (data instanceof FormData) {
+            const h = headers as Record<string, string | undefined>
+            delete h['Content-Type']
+          }
+          return data as FormData
+        },
+      ],
+    })
   },
 }
 
@@ -328,6 +475,10 @@ export const onboardingApi = {
   },
 }
 
+/**
+ * Same-origin as applications: `baseURL` `/api` + `/admin/fees` → `GET/PUT /api/admin/fees` on this app
+ * (see `app/api/admin/fees/route.ts` → backend `${NEXT_PUBLIC_API_URL}/api/admin/fees`).
+ */
 export const feesApi = {
   getAll: async () => {
     return api.get<AdminFeeDto[]>('/admin/fees')

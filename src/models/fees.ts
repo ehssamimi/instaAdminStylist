@@ -1,4 +1,4 @@
-/** Row from GET /admin/fees */
+/** Row from `GET /api/admin/fees` (same-origin; proxied to backend) */
 export interface AdminFeeDto {
   id: string
   minMonthlyCalls: number
@@ -10,7 +10,7 @@ export interface AdminFeeDto {
   version?: number
 }
 
-/** Item shape for PUT /admin/fees (bulk replace) */
+/** Item shape for `PUT /api/admin/fees` (bulk replace) */
 export interface AdminFeePutItem {
   id: string
   minMonthlyCalls: number

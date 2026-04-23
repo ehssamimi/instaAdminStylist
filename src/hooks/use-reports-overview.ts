@@ -1,14 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
+import { reportsApi } from "@/lib/api"
 import type { ReportRow } from "@/lib/mock-reports"
 import type { ReportStatus } from "@/models/reports"
 
-/**
- * Uses local mock data until `GET /admin/reports` returns a stable payload.
- * Wire `reportsApi.getList` here when the backend list is available.
- */
 export function useReportsOverview(status: ReportStatus) {
   const [data, setData] = useState<ReportRow[]>([])
   const [page, setPage] = useState(1)
@@ -17,40 +14,75 @@ export function useReportsOverview(status: ReportStatus) {
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchOnce = useCallback(async () => {
+    return reportsApi.getList({
+      status,
+      page,
+      pageSize: perPage,
+      ...(search.trim() ? { search: search.trim() } : {}),
+    })
+  }, [status, page, perPage, search])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    setError(null)
 
-    const t = window.setTimeout(() => {
-      void (async () => {
-        const { filterAndPaginateMockReports } = await import("@/lib/mock-reports")
-        const { rows, totalPages: tp, total: tCount } =
-          filterAndPaginateMockReports({
-            status,
-            search,
-            page,
-            pageSize: perPage,
-          })
+    void fetchOnce()
+      .then((response) => {
         if (!cancelled) {
-          setData(rows)
-          setTotalPages(tp)
-          setTotal(tCount)
-          setPage((p) => Math.min(p, Math.max(1, tp)))
+          setData(response.data)
+          setTotalPages(response.meta.totalPages)
+          setTotal(response.meta.total)
+          setPage((p) =>
+            Math.min(p, Math.max(1, response.meta.totalPages))
+          )
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e : new Error(String(e)))
+          setData([])
+          setTotalPages(1)
+          setTotal(0)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
           setLoading(false)
         }
-      })()
-    }, 120)
+      })
 
     return () => {
       cancelled = true
-      window.clearTimeout(t)
     }
-  }, [status, page, perPage, search])
+  }, [fetchOnce])
+
+  const refetch = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetchOnce()
+      setData(response.data)
+      setTotalPages(response.meta.totalPages)
+      setTotal(response.meta.total)
+      setPage((p) => Math.min(p, Math.max(1, response.meta.totalPages)))
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)))
+      setData([])
+      setTotalPages(1)
+      setTotal(0)
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchOnce])
 
   return {
     data,
     loading,
+    error,
     page,
     perPage,
     totalPages,
@@ -59,5 +91,6 @@ export function useReportsOverview(status: ReportStatus) {
     setPage,
     setPerPage,
     setSearch,
+    refetch,
   }
 }

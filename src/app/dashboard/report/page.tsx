@@ -7,9 +7,12 @@ import { format, isValid, parseISO } from "date-fns"
 import { Loader2 } from "lucide-react"
 
 import { DataTable } from "@/components/data-table"
+import { ReportTableActionButton } from "@/components/report-table-action-button"
 import { SearchInput } from "@/components/search-input"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { usePageTitle } from "@/hooks/use-page-title"
 import { useReportsOverview } from "@/hooks/use-reports-overview"
+import { getApiErrorMessage, reportsApi } from "@/lib/api"
 import {
   reportRowSchema,
   type ReportRow,
@@ -46,15 +49,25 @@ export default function ReportsPage() {
   const {
     data,
     loading,
+    error,
     page,
     perPage,
     totalPages,
     setPage,
     setPerPage,
     setSearch,
+    refetch,
   } = useReportsOverview(status)
 
   const [isNavigating, setIsNavigating] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<
+    | null
+    | {
+        type: "ignore" | "remove" | "reopen" | "restore"
+        row: ReportRow
+      }
+  >(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
     setPage(1)
@@ -115,36 +128,68 @@ export default function ReportsPage() {
         header: "Actions",
         enableSorting: false,
         cell: ({ row }) => {
-          const open = row.original.status === "OPEN"
+          const st = row.original.status
           return (
             <div
-              className="flex flex-wrap items-center gap-4"
+              className="flex flex-wrap items-center gap-2.5"
               onClick={(e) => e.stopPropagation()}
             >
-              {open ? (
-                <>
-                  <button
-                    type="button"
-                    className="font-satoshi text-sm font-semibold text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+              {st === "OPEN" ? (
+                <div className="flex   items-center gap-2.5">
+                  <ReportTableActionButton
+                    variant="neutral"
                     onClick={() => {
-                      /* wire PATCH ignore when API exists */
+                      setActionError(null)
+                      setConfirmAction({
+                        type: "ignore",
+                        row: row.original,
+                      })
                     }}
                   >
                     Ignore Report
-                  </button>
-                  <button
-                    type="button"
-                    className="font-satoshi text-sm font-semibold text-destructive underline-offset-4 transition-colors hover:underline"
+                  </ReportTableActionButton>
+                  <ReportTableActionButton
+                    variant="danger"
                     onClick={() => {
-                      /* wire remove user when API exists */
+                      setActionError(null)
+                      setConfirmAction({
+                        type: "remove",
+                        row: row.original,
+                      })
                     }}
                   >
                     Remove User
-                  </button>
-                </>
-              ) : (
-                <span className="text-sm text-muted-foreground">—</span>
-              )}
+                  </ReportTableActionButton>
+                </div>
+              ) : null}
+              {st === "IGNORED" ? (
+                <ReportTableActionButton
+                  variant="neutral"
+                  onClick={() => {
+                    setActionError(null)
+                    setConfirmAction({
+                      type: "reopen",
+                      row: row.original,
+                    })
+                  }}
+                >
+                  Reopen report
+                </ReportTableActionButton>
+              ) : null}
+              {st === "REMOVED_USER" ? (
+                <ReportTableActionButton
+                  variant="neutral"
+                  onClick={() => {
+                    setActionError(null)
+                    setConfirmAction({
+                      type: "restore",
+                      row: row.original,
+                    })
+                  }}
+                >
+                  Restore user
+                </ReportTableActionButton>
+              ) : null}
             </div>
           )
         },
@@ -167,6 +212,71 @@ export default function ReportsPage() {
       ) : null}
 
       <h1 className="admin-page-title mb-6">{title}</h1>
+
+      {error ? (
+        <p className="mb-4 text-sm text-destructive" role="alert">
+          {error.message}
+        </p>
+      ) : null}
+
+      {actionError ? (
+        <p className="mb-4 text-sm text-destructive" role="alert">
+          {actionError}
+        </p>
+      ) : null}
+
+      {confirmAction ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setConfirmAction(null)
+          }}
+          title={
+            confirmAction.type === "ignore"
+              ? "Ignore this report?"
+              : confirmAction.type === "remove"
+                ? "Remove user?"
+                : confirmAction.type === "reopen"
+                  ? "Reopen this report?"
+                  : "Restore user?"
+          }
+          description={
+            confirmAction.type === "ignore"
+              ? "The report will be marked as ignored and no further action will be taken."
+              : confirmAction.type === "remove"
+                ? `This will suspend ${confirmAction.row.reported_user} and mark the report as removed.`
+                : confirmAction.type === "reopen"
+                  ? "The report will return to open status for review."
+                  : `This will restore ${confirmAction.row.reported_user} and set the report back to open.`
+          }
+          confirmLabel={
+            confirmAction.type === "ignore"
+              ? "Ignore report"
+              : confirmAction.type === "remove"
+                ? "Remove user"
+                : confirmAction.type === "reopen"
+                  ? "Reopen report"
+                  : "Restore user"
+          }
+          onConfirm={() =>
+            (async () => {
+              const { type, row } = confirmAction
+              try {
+                if (type === "ignore") await reportsApi.ignore(row.id)
+                else if (type === "remove")
+                  await reportsApi.removeUser(row.id)
+                else if (type === "reopen") await reportsApi.reopen(row.id)
+                else await reportsApi.restoreUser(row.id)
+                setActionError(null)
+                await refetch()
+              } catch (e) {
+                setActionError(getApiErrorMessage(e))
+                throw e
+              }
+            })()
+          }
+        />
+      ) : null}
 
       <div className="rounded-xl border border-border-soft bg-white p-4 shadow-sm md:p-6">
         <SearchInput

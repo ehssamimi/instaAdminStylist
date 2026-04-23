@@ -1,55 +1,86 @@
-import type { PendingStylistApplicationsResponse } from "@/models/stylistApplication"
+import type {
+  StylistApplicationApiStatus,
+  StylistApplicationListItem,
+  StylistApplicationsListResult,
+} from "@/models/stylistApplication"
+import type { StylistApplicationsQueryParams } from "@/lib/api"
 
-export const MOCK_PENDING_STYLIST_APPLICATIONS: PendingStylistApplicationsResponse =
-  [
-    {
-      id: "1",
-      userId: "user-1",
-      businessName: "Styled by Jane",
-      gender: "Female",
-      location: "New York, NY",
-      instagramHandle: "@jane.styles",
-      facebookHandle: "Styled by Jane",
-      tiktokHandle: "@janestyles",
-      linkedInUrl: "https://linkedin.com/in/jane-stylist",
-      experience: "7 years",
-      platformSource: "Instagram",
-      pushNotification: true,
-      speciality: [
-        "High fashion/editorial",
-        "Special events/weddings",
-        "Capsule Wardrobes",
-      ],
-      recommendShops: ["Macy's", "Zara", "Nordstrom"],
-      bio: "Wardrobe and personal stylist focused on events and premium looks.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=320&h=320&fit=crop&crop=faces",
-      isVerified: false,
-      available: true,
-      bookingNotification: true,
-      bookingSms: false,
-      bookingEmail: true,
-      bookingReminderNotification: true,
-      bookingReminderSms: false,
-      bookingReminderEmail: true,
-      messageNotification: true,
-      messageSms: false,
-      messageEmail: true,
-      reviewNotification: true,
-      reviewSms: false,
-      reviewEmail: true,
-      availabilityNotification: true,
-      languageSpoken: ["English"],
-      createdAt: "2026-03-01T10:20:00.000Z",
-      updatedAt: "2026-03-20T12:00:00.000Z",
-      user: {
-        id: "user-1",
-        email: "jane.smith@example.com",
-        firstName: "Jane",
-        lastName: "Smith",
-      },
-      firstName: "Jane",
-      lastName: "Smith",
-      email: "jane.smith@example.com",
-    },
+const API_STATUS_BY_QUERY: Record<
+  StylistApplicationsQueryParams["status"],
+  StylistApplicationApiStatus
+> = {
+  review: "PENDING_REVIEW",
+  approved: "APPROVED",
+  rejected: "REJECTED",
+}
+
+export const MOCK_STYLIST_APPLICATION_ROWS: StylistApplicationListItem[] = [
+  {
+    userId: "user-1",
+    firstName: "Jane",
+    lastName: "Smith",
+    yearsOfExperience: 7,
+    speciality: "High fashion/editorial, Special events/weddings",
+    status: "PENDING_REVIEW",
+    rejectionReason: null,
+    updatedAt: "2026-03-20T12:00:00.000Z",
+    email: "jane.smith@example.com",
+  },
+  {
+    userId: "user-2",
+    firstName: "Alex",
+    lastName: "Rivera",
+    yearsOfExperience: 3,
+    speciality: "Corporate/Professional Attire",
+    status: "APPROVED",
+    rejectionReason: null,
+    updatedAt: "2026-03-18T09:30:00.000Z",
+    email: "alex.r@example.com",
+  },
+  {
+    userId: "user-3",
+    firstName: "Sam",
+    lastName: "Lee",
+    yearsOfExperience: 1,
+    speciality: "Capsule Wardrobes",
+    status: "REJECTED",
+    rejectionReason: "Incomplete profile",
+    updatedAt: "2026-03-15T14:00:00.000Z",
+    email: "sam.lee@example.com",
+  },
+]
+
+function matchesSearch(row: StylistApplicationListItem, q: string): boolean {
+  if (!q) return true
+  const hay = [
+    row.firstName,
+    row.lastName,
+    row.speciality,
+    row.email,
   ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+  return hay.includes(q)
+}
+
+/** Offline / error fallback: same filtering semantics as the live API. */
+export function getMockStylistApplicationsPage(
+  params: StylistApplicationsQueryParams
+): StylistApplicationsListResult {
+  const want = API_STATUS_BY_QUERY[params.status]
+  const q = params.search?.trim().toLowerCase() ?? ""
+  const filtered = MOCK_STYLIST_APPLICATION_ROWS.filter(
+    (r) => r.status === want && matchesSearch(r, q)
+  )
+  const pageSize = Math.max(1, params.pageSize)
+  const total = filtered.length
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const page = Math.min(Math.max(1, params.page), totalPages)
+  const start = (page - 1) * pageSize
+  const data = filtered.slice(start, start + pageSize)
+  return {
+    data,
+    meta: { page, pageSize, total, totalPages },
+  }
+}

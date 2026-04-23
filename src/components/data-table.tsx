@@ -70,6 +70,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 
 export function DataTable({
   data: initialData,
@@ -83,11 +84,17 @@ export function DataTable({
   // Server-side pagination props
   serverPagination,
   totalPages,
+  /** Total rows on the server (all pages). When set, pagination shows if this exceeds the page size. */
+  totalItemCount,
   currentPage,
   pageSize: externalPageSize,
   onPageChange,
   onPageSizeChange,
   displayDragHandle = false,
+  /** When true, table sits inside an existing card (no inner white panel). */
+  embedded = false,
+  /** `plain`: light header row for dense admin tables inside a panel. */
+  headerTone = "brand" as "brand" | "plain",
 }: {
   data: unknown[]
   columns: ColumnDef<unknown>[]
@@ -99,12 +106,15 @@ export function DataTable({
   // Server-side pagination props
   serverPagination?: boolean
   totalPages?: number
+  totalItemCount?: number
   currentPage?: number
   pageSize?: number
   onPageChange?: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
   isUpdating?: boolean
   displayDragHandle?: boolean
+  embedded?: boolean
+  headerTone?: "brand" | "plain"
 }) {
   const [data, setData] = React.useState(() => initialData)
   // Add useEffect to sync with initialData changes
@@ -212,16 +222,21 @@ export function DataTable({
   const effectivePageCount = serverPagination
     ? Math.max(1, totalPages ?? 1)
     : Math.max(1, clientPageCount)
+  const serverPageSize = externalPageSize ?? 10
+  const serverHasExtraPages =
+    Boolean(serverPagination) &&
+    totalItemCount != null &&
+    totalItemCount > serverPageSize
   /**
-   * Hide pagination when there is only one page (client or server). That covers lists
-   * with ≤10 rows at the default page size of 10, without hiding controls when a
-   * smaller page size creates multiple pages for a small total count.
+   * Hide pagination when there is only one page (client or server). For server mode,
+   * also show when `totalItemCount` exceeds the page size so controls appear even if
+   * `totalPages` from the API is missing or wrong.
    */
   const shouldShowPagination =
     !disablePagination &&
     !isLoading &&
     filteredRowCount > 0 &&
-    effectivePageCount > 1
+    (effectivePageCount > 1 || serverHasExtraPages)
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -245,7 +260,12 @@ export function DataTable({
     <div className="flex w-full flex-col justify-start gap-6">
       <div className="relative flex flex-col gap-4">
 
-        <div className="overflow-hidden rounded-lg bg-white relative">
+        <div
+          className={cn(
+            "relative overflow-hidden",
+            embedded ? "bg-transparent" : "rounded-lg bg-white"
+          )}
+        >
           {isUpdating && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
               <IconLoader className="animate-spin size-8 text-brown-600" />
@@ -269,20 +289,45 @@ export function DataTable({
               <Table>
                 <TableHeader className="sticky top-0 z-10 ">
                   {table.getHeaderGroups().map((headerGroup, index, groups) => (
-                    <TableRow key={headerGroup.id} className="border-b border-gray-100">
-                      {displayDragHandle && <TableHead className={`bg-brown-600/10 w-12 ${index === groups.length - 1 ? "rounded-bl-lg" : ""
-                        }`} />}
+                    <TableRow
+                      key={headerGroup.id}
+                      className={cn(
+                        "border-b border-gray-100",
+                        headerTone === "plain" && "border-gray-200"
+                      )}
+                    >
+                      {displayDragHandle && (
+                        <TableHead
+                          className={cn(
+                            "w-12",
+                            headerTone === "plain" ? "bg-white" : "bg-brown-600/10",
+                            index === groups.length - 1 && !embedded
+                              ? "rounded-bl-lg"
+                              : ""
+                          )}
+                        />
+                      )}
                       {headerGroup.headers.map((header) => {
                         const canSort = header.column.getCanSort()
                         const sortDirection = header.column.getIsSorted()
+                        const headBg =
+                          headerTone === "plain" ? "bg-white" : "bg-brown-600/10"
+                        const headHover =
+                          headerTone === "plain"
+                            ? "hover:bg-gray-50/80"
+                            : "hover:bg-brown-600/20"
                         return (
                           <TableHead
                             key={header.id}
                             colSpan={header.colSpan}
-                            className={`bg-brown-600/10 ${index === groups.length - 1
-                              ? "last:rounded-br-lg"
-                              : ""
-                              } ${canSort ? "cursor-pointer select-none hover:bg-brown-600/20" : ""}`}
+                            className={cn(
+                              headBg,
+                              index === groups.length - 1 &&
+                                !embedded &&
+                                "last:rounded-br-lg",
+                              canSort &&
+                                `cursor-pointer select-none ${headHover}`
+                            )}
                             onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                           >
                             {header.isPlaceholder ? null : (

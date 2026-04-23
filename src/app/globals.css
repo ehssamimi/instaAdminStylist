@@ -226,6 +226,14 @@ body {
   .admin-panel-surface {
     @apply rounded-xl border border-gray-100 bg-white p-4 shadow-panel;
   }
+
+  /**
+   * Main nav links: thin Lucide strokes (default 2). With asChild, the link IS the menu button—no nested <a>, so
+   * use svg descendants of the slot directly. (Fill-only custom icons: stroke still none; paths ignore width.)
+   */
+  [data-nav-main] [data-slot="sidebar-menu-button"] svg * {
+    stroke-width: 1.1;
+  }
 }
 
 button {

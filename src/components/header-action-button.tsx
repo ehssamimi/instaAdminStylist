@@ -37,11 +37,11 @@ export const headerActionButtonVariants = cva(
           "hover:bg-black-100/92 hover:border-black-100/92",
         ],
         neutral: [
-          "border border-gray-500 bg-white text-black-100",
+          "border border-gray-500 bg-transparent text-black-100",
           "hover:bg-gray-50",
         ],
         errorSoft: [
-          "border border-error-300 bg-error-50 text-error-600",
+          "border border-error-300 bg-transparent text-error-600",
           "hover:bg-error-100/80",
         ],
       },

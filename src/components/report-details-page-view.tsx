@@ -6,22 +6,18 @@ import { Mail, Phone, X, ZoomIn } from "lucide-react"
 
 import { EachContainer, EachContainerDivider } from "@/components/each-container"
 import { HeaderActionButton } from "@/components/header-action-button"
-import { PageBackHeading } from "@/components/page-back-heading"
 import { NameAvatar } from "@/components/detail-info-card"
+import { PageBackHeading } from "@/components/page-back-heading"
+import { ReportDetailsPageSkeleton } from "@/components/report-details-page-skeleton"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { getApiErrorMessage, reportsApi } from "@/lib/api"
 import {
   Dialog,
   DialogClose,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog"
-import type { AdminReportDetail, ReportStatus } from "@/models/reports"
-
-const statusLabels: Record<ReportStatus, string> = {
-  OPEN: "Reports to review",
-  REMOVED_USER: "Removed user",
-  IGNORED: "Ignored",
-}
+import type { AdminReportDetail } from "@/models/reports"
 
 function formatReportDate(iso: string): string {
   const d = parseISO(iso)
@@ -57,15 +53,25 @@ type ReportDetailsPageViewProps = {
   report: AdminReportDetail | null
   backHref: string
   backAriaLabel?: string
+  loading?: boolean
+  errorMessage?: string | null
+  /** Reload detail after a successful moderation action. */
+  onRefetchReport?: () => Promise<void>
 }
 
 export function ReportDetailsPageView({
   report,
   backHref,
   backAriaLabel = "Back to reports",
+  loading = false,
+  errorMessage = null,
+  onRefetchReport,
 }: ReportDetailsPageViewProps) {
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
   const [ignoreDialogOpen, setIgnoreDialogOpen] = useState(false)
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false)
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false)
+  const [mutationError, setMutationError] = useState<string | null>(null)
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
   const email = report?.reportedUserEmail?.trim()
@@ -100,17 +106,49 @@ export function ReportDetailsPageView({
             </HeaderActionButton>
           </div>
         ) : null}
+        {report?.status === "IGNORED" ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:mt-1">
+            <HeaderActionButton
+              type="button"
+              variant="primary"
+              onClick={() => setReopenDialogOpen(true)}
+            >
+              Reopen report
+            </HeaderActionButton>
+          </div>
+        ) : null}
+        {report?.status === "REMOVED_USER" ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:mt-1">
+            <HeaderActionButton
+              type="button"
+              variant="primary"
+              onClick={() => setRestoreDialogOpen(true)}
+            >
+              Restore user
+            </HeaderActionButton>
+          </div>
+        ) : null}
       </div>
 
       <ConfirmDialog
         open={removeDialogOpen}
         onOpenChange={setRemoveDialogOpen}
         title="Remove user?"
-        description={`This will remove ${report?.reportedUserName ?? "this user"} from the platform. This action should align with your moderation policy.`}
+        description={`This will suspend ${report?.reportedUserName ?? "this user"} and mark the report as removed. This should align with your moderation policy.`}
         confirmLabel="Remove user"
-        onConfirm={() => {
-          /* wire remove user when API exists */
-        }}
+        onConfirm={() =>
+          (async () => {
+            if (!report) return
+            try {
+              await reportsApi.removeUser(report.id)
+              setMutationError(null)
+              await onRefetchReport?.()
+            } catch (e) {
+              setMutationError(getApiErrorMessage(e))
+              throw e
+            }
+          })()
+        }
       />
 
       <ConfirmDialog
@@ -119,9 +157,61 @@ export function ReportDetailsPageView({
         title="Ignore this report?"
         description="The report will be marked as ignored and no further action will be taken."
         confirmLabel="Ignore report"
-        onConfirm={() => {
-          /* wire PATCH ignore when API exists */
-        }}
+        onConfirm={() =>
+          (async () => {
+            if (!report) return
+            try {
+              await reportsApi.ignore(report.id)
+              setMutationError(null)
+              await onRefetchReport?.()
+            } catch (e) {
+              setMutationError(getApiErrorMessage(e))
+              throw e
+            }
+          })()
+        }
+      />
+
+      <ConfirmDialog
+        open={reopenDialogOpen}
+        onOpenChange={setReopenDialogOpen}
+        title="Reopen this report?"
+        description="The report will return to open status for review."
+        confirmLabel="Reopen report"
+        onConfirm={() =>
+          (async () => {
+            if (!report) return
+            try {
+              await reportsApi.reopen(report.id)
+              setMutationError(null)
+              await onRefetchReport?.()
+            } catch (e) {
+              setMutationError(getApiErrorMessage(e))
+              throw e
+            }
+          })()
+        }
+      />
+
+      <ConfirmDialog
+        open={restoreDialogOpen}
+        onOpenChange={setRestoreDialogOpen}
+        title="Restore user?"
+        description={`This will restore ${report?.reportedUserName ?? "this user"} and set the report back to open.`}
+        confirmLabel="Restore user"
+        onConfirm={() =>
+          (async () => {
+            if (!report) return
+            try {
+              await reportsApi.restoreUser(report.id)
+              setMutationError(null)
+              await onRefetchReport?.()
+            } catch (e) {
+              setMutationError(getApiErrorMessage(e))
+              throw e
+            }
+          })()
+        }
       />
 
       <Dialog
@@ -155,7 +245,21 @@ export function ReportDetailsPageView({
         </DialogContent>
       </Dialog>
 
-      {!report ? (
+      {errorMessage ? (
+        <p className="mb-4 font-satoshi text-sm text-destructive" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
+
+      {mutationError ? (
+        <p className="mb-4 font-satoshi text-sm text-destructive" role="alert">
+          {mutationError}
+        </p>
+      ) : null}
+
+      {loading ? (
+        <ReportDetailsPageSkeleton />
+      ) : !report ? (
         <p className="font-satoshi text-sm text-muted-foreground" role="status">
           Report not found.
         </p>
@@ -196,7 +300,7 @@ export function ReportDetailsPageView({
             <div className="flex flex-wrap items-center gap-2 font-satoshi text-sm font-normal text-gray-400">
               <NameAvatar
                 name={report.reportedByName}
-                imageSrc={null}
+                imageSrc={report.reportedByAvatarUrl ?? null}
                 className="size-9 rounded-full text-[11px]"
               />
               <p>

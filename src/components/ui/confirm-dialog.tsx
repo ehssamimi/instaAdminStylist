@@ -1,6 +1,7 @@
 "use client"
 
-import { AlertTriangle } from "lucide-react"
+import { useEffect, useState } from "react"
+import { AlertTriangle, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -19,8 +20,8 @@ type ConfirmDialogProps = {
   /** Body copy under the title */
   description: string
   title?: string
-  /** Called when the user confirms (primary action). Dialog closes after this. */
-  onConfirm: () => void
+  /** Called when the user confirms. Dialog closes after this resolves; stays open if it rejects. */
+  onConfirm: () => void | Promise<void>
   /** Optional; defaults to closing the dialog without calling `onConfirm`. */
   onCancel?: () => void
   confirmLabel?: string
@@ -41,14 +42,27 @@ export function ConfirmDialog({
   showCloseButton = false,
   className,
 }: ConfirmDialogProps) {
+  const [pending, setPending] = useState(false)
+
+  useEffect(() => {
+    if (!open) setPending(false)
+  }, [open])
+
   function handleCancel() {
+    if (pending) return
     onCancel?.()
     onOpenChange(false)
   }
 
-  function handleConfirm() {
-    onConfirm()
-    onOpenChange(false)
+  async function handleConfirm() {
+    if (pending) return
+    setPending(true)
+    try {
+      await Promise.resolve(onConfirm())
+      onOpenChange(false)
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -78,6 +92,7 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant="outline"
+            disabled={pending}
             className="w-full min-h-11 border-black bg-white font-satoshi font-bold text-black hover:bg-gray-50"
             onClick={handleCancel}
           >
@@ -85,10 +100,15 @@ export function ConfirmDialog({
           </Button>
           <Button
             type="button"
+            disabled={pending}
             className="w-full min-h-11 bg-black font-satoshi font-bold text-white hover:bg-neutral-800"
-            onClick={handleConfirm}
+            onClick={() => void handleConfirm()}
           >
-            {confirmLabel}
+            {pending ? (
+              <Loader2 className="mx-auto size-5 animate-spin" aria-hidden />
+            ) : (
+              confirmLabel
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,16 +1,19 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
-import { useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { ColumnDef } from '@tanstack/react-table'
 import { FilePlus2, Trash2 } from 'lucide-react'
 
+import { AddFeaturedStylistModal } from '@/components/add-featured-stylist-modal'
 import { DataTable } from '@/components/data-table'
+import { RemoveFeaturedStylistDialog } from '@/components/remove-featured-stylist-dialog'
 import { SearchInput } from '@/components/search-input'
 import { Button } from '@/components/ui/button'
-import { useStylists } from '@/hooks/use-stylists'
+import { useFeaturedStylists } from '@/hooks/use-featured-stylists'
+import { getApiErrorMessage, stylistsApi } from '@/lib/api'
 import type { StylistRowDto } from '@/models/stylists'
+import { toast } from 'sonner'
 
 const featuredStylistRowSchema = z.object({
   id: z.string(),
@@ -26,19 +29,25 @@ const featuredStylistRowSchema = z.object({
 })
 
 export function FeaturedStylistsTable() {
-  const router = useRouter()
   const {
     data,
     loading,
+    error,
     page,
     perPage,
     totalPages,
     setPage,
     setPerPage,
     setSearch,
-  } = useStylists()
+    refetch,
+  } = useFeaturedStylists()
 
   const [items, setItems] = useState<StylistRowDto[]>([])
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<{
+    id: string
+    displayName: string
+  } | null>(null)
 
   useEffect(() => {
     setItems(data)
@@ -52,18 +61,38 @@ export function FeaturedStylistsTable() {
     [setPage, setSearch]
   )
 
-  const handleRowClick = useCallback(
-    (row: unknown) => {
-      const stylist = row as StylistRowDto
-      router.push(`/dashboard/stylist/${stylist.id}`)
+  const handleReorder = useCallback(
+    (
+      newData: unknown[],
+      dragged: { id: string | number; newIndex: number; oldIndex: number }
+    ) => {
+      setItems(newData as StylistRowDto[])
+      const stylistId = String(dragged.id)
+      /** 1-based position in the full featured list (works with pagination). */
+      const order = (page - 1) * perPage + dragged.newIndex + 1
+      void (async () => {
+        try {
+          await stylistsApi.updateFeaturedOrder(stylistId, order)
+        } catch (e) {
+          toast.error(getApiErrorMessage(e))
+          await refetch()
+        }
+      })()
     },
-    [router]
+    [page, perPage, refetch]
   )
 
-  const handleRemove = useCallback((id: string, e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
-    setItems((prev) => prev.filter((s) => s.id !== id))
-  }, [])
+  const openRemoveDialog = useCallback(
+    (row: StylistRowDto, e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      const displayName = [row.first_name, row.last_name]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || 'Stylist'
+      setRemoveTarget({ id: row.id, displayName })
+    },
+    []
+  )
 
   const columns: ColumnDef<StylistRowDto>[] = useMemo(
     () => [
@@ -108,18 +137,58 @@ export function FeaturedStylistsTable() {
             type="button"
             className="inline-flex rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
             aria-label="Remove from featured"
-            onClick={(e) => handleRemove(row.original.id, e)}
+            onClick={(e) => openRemoveDialog(row.original, e)}
           >
             <Trash2 className="h-4 w-4" />
           </button>
         ),
       },
     ],
-    [handleRemove]
+    [openRemoveDialog]
   )
 
   return (
     <div className="mt-6 rounded-xl border border-border-soft bg-white p-4 shadow-sm md:p-6">
+      <RemoveFeaturedStylistDialog
+        open={removeTarget != null}
+        onOpenChange={(o) => {
+          if (!o) setRemoveTarget(null)
+        }}
+        stylistName={removeTarget?.displayName ?? ''}
+        onConfirm={async () => {
+          if (!removeTarget) return
+          const { id, displayName: name } = removeTarget
+          try {
+            const res = await stylistsApi.removeFeatured(id)
+            if (res.success === false) {
+              throw new Error('Could not remove from featured list.')
+            }
+            await refetch()
+            toast.success(
+              name
+                ? `${name} was removed from featured stylists.`
+                : 'Stylist removed from featured list.'
+            )
+          } catch (e) {
+            toast.error(getApiErrorMessage(e))
+            throw e
+          }
+        }}
+      />
+      <AddFeaturedStylistModal
+        open={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        featuredIds={items.map((s) => s.id)}
+        onConfirm={() => {
+          void refetch()
+        }}
+      />
+      {error ? (
+        <p className="mb-4 text-sm text-destructive" role="alert">
+          {error.message}
+        </p>
+      ) : null}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full flex-1 items-center gap-3">
           <SearchInput
@@ -133,7 +202,7 @@ export function FeaturedStylistsTable() {
           variant="outline"
           size="sm"
           className="h-[var(--height-form-field)] shrink-0 shadow-[var(--shadow-outline-inset)]"
-          onClick={() => router.push('/dashboard/stylists')}
+          onClick={() => setAddModalOpen(true)}
         >
           <FilePlus2 className="h-5 w-5" />
           <span>Add Stylist</span>
@@ -150,9 +219,8 @@ export function FeaturedStylistsTable() {
             data={items}
             schema={featuredStylistRowSchema}
             columns={columns as ColumnDef<unknown>[]}
-            onRowClick={handleRowClick}
             displayDragHandle
-            onReorder={(newData) => setItems(newData as StylistRowDto[])}
+            onReorder={handleReorder}
             serverPagination
             currentPage={page}
             pageSize={perPage}

@@ -11,6 +11,7 @@ import { SearchInput } from '@/components/search-input'
 import { Button } from '@/components/ui/button'
 import { useStylists } from '@/hooks/use-stylists'
 import type { StylistRowDto } from '@/models/stylists'
+import { EachContainer } from './each-container'
 
 const stylistSchema = z.object({
   id: z.string(),
@@ -93,7 +94,7 @@ export function StylistsTable() {
   )
 
   return (
-    <div className="mt-6 rounded-xl border border-border-soft bg-white p-4 shadow-sm md:p-6">
+    <EachContainer  >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full flex-1 items-center gap-3">
           <SearchInput
@@ -135,6 +136,6 @@ export function StylistsTable() {
           />
         )}
       </div>
-    </div>
+    </EachContainer>
   )
 }

@@ -68,10 +68,10 @@ const LoginPage = () => {
         document.cookie = `user=${JSON.stringify(response.user)}; path=/`
         if (response.user?.type === "admin") {
           toast.success('Login successful!')
-          const redirectPath = '/dashboard'
-          router.push(redirectPath)
+          router.push('/dashboard')
+          // Keep loading until the dashboard route mounts (this page unmounts).
+          return
         }
-
       }
     } catch (error) {
       let errorMessage = 'Login failed. Please try again.'
@@ -82,9 +82,8 @@ const LoginPage = () => {
         errorMessage = apiError.response?.data?.message || errorMessage
       }
       toast.error(errorMessage)
-    } finally {
-      setIsLoading(false)
     }
+    setIsLoading(false)
   }
 
   const handleVerifyOtp = async () => {
@@ -112,14 +111,14 @@ const LoginPage = () => {
         ? '/dashboard'
         : '/dashboard/my-coverage'
       router.push(redirectPath)
+      return
     } catch (error) {
       console.error('OTP verification error:', error)
       const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Verification failed. Please try again.'
       setOtpError(errorMessage)
       toast.error(errorMessage)
-    } finally {
-      setIsLoading(false)
     }
+    setIsLoading(false)
   }
 
   const handleResendOtp = async () => {
