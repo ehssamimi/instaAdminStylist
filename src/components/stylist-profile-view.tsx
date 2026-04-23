@@ -14,6 +14,7 @@ import { StylistProfileHeaderCard } from "@/components/stylist-profile-header-ca
 import { StylistProfilePageSkeleton } from "@/components/stylist-profile-page-skeleton"
 import { Form, FormField } from "@/components/ui/form"
 import { FormItemInput } from "@/components/ui/form-item-input"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   STYLIST_ONBOARDING_SCREEN,
   STYLIST_ONBOARDING_USER_TYPE,
@@ -507,7 +508,18 @@ export function StylistProfileView({ backHref }: StylistProfileViewProps) {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageBackHeading title="Stylist Profile" backHref={backHref} />
         <div className="flex flex-wrap gap-3 sm:shrink-0 sm:justify-end">
-          {stylingFormLocked ? (
+          {detailLoading ? (
+            <>
+              <Skeleton
+                className="h-12 w-[132px] shrink-0 rounded-[8px]"
+                aria-hidden
+              />
+              <Skeleton
+                className="h-12 w-[160px] shrink-0 rounded-[8px]"
+                aria-hidden
+              />
+            </>
+          ) : !stylingFormLocked ? (
             <HeaderActionButton
               type="button"
               variant="primary"
