@@ -1,5 +1,5 @@
 "use client"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { matchNavItem } from "@/config/navigation"
 function fallbackTitle(pathname: string): string {
   const overrides: Record<string, string> = {
@@ -18,7 +18,8 @@ function fallbackTitle(pathname: string): string {
 
 export function usePageTitle(customOverrides?: Record<string, string>) {
   const pathname = usePathname()
-  const navItem = matchNavItem(pathname)
+  const searchParams = useSearchParams()
+  const navItem = matchNavItem(pathname, searchParams)
   
   // Merge custom overrides with default ones if provided
   const title = navItem?.pageTitle || navItem?.title || fallbackTitle(pathname)

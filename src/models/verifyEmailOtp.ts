@@ -18,7 +18,7 @@ export interface User {
   email_verified_at: string
   created_at: string
   updated_at: string
-  phone_verified_at: any
-  social_provider: any
-  social_id: any
+  phone_verified_at: string | null
+  social_provider: string | null
+  social_id: string | number | null
 }

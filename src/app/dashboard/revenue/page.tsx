@@ -1,22 +1,16 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { RevenuePageView } from "@/components/revenue-page-view"
 import { useRevenueOverview } from "@/hooks/use-revenue-overview"
 import { usePageTitle } from "@/hooks/use-page-title"
-import { buildRevenueRangeMap } from "@/lib/revenue-dashboard"
 import type { RevenueTimeRange } from "@/models/dashboardOverview"
 
 export default function RevenuePage() {
   const { title } = usePageTitle()
-  const { data, loading, error } = useRevenueOverview()
   const [activeRange, setActiveRange] = useState<RevenueTimeRange>("7d")
-
-  const rangeMap = useMemo(
-    () => (data ? buildRevenueRangeMap(data) : null),
-    [data]
-  )
+  const { model, loading, error, ready } = useRevenueOverview(activeRange)
 
   return (
     <div className="relative -m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
@@ -27,7 +21,7 @@ export default function RevenuePage() {
         </p>
       ) : null}
 
-      {loading && !data ? (
+      {loading && !ready ? (
         <div className="space-y-6">
           <div className="h-11 animate-pulse rounded-md bg-muted" />
           <div className="grid grid-cols-1 gap-[10px] @xl/main:grid-cols-3">
@@ -37,17 +31,17 @@ export default function RevenuePage() {
           </div>
           <div className="h-[360px] animate-pulse rounded-xl bg-muted" />
         </div>
-      ) : rangeMap ? (
+      ) : ready && model ? (
         <RevenuePageView
           activeRange={activeRange}
           onRangeChange={setActiveRange}
-          rangeMap={rangeMap}
+          model={model}
         />
-      ) : (
+      ) : !error ? (
         <p className="text-sm text-muted-foreground">
           Revenue data is not available.
         </p>
-      )}
+      ) : null}
     </div>
   )
 }

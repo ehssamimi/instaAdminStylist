@@ -7,9 +7,9 @@ import { ADMIN_DASHBOARD_TABS_TRIGGER_CLASS } from "@/lib/admin-dashboard-tabs"
 import {
   REVENUE_RANGE_TAB_LABELS,
   REVENUE_TAB_ORDER,
-  type RevenueRangeModel,
 } from "@/lib/revenue-dashboard"
 import type { RevenueTimeRange } from "@/models/dashboardOverview"
+import type { RevenueRangeModel } from "@/lib/revenue-dashboard"
 
 const currency = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -21,15 +21,15 @@ const currency = new Intl.NumberFormat("en-US", {
 export type RevenuePageViewProps = {
   activeRange: RevenueTimeRange
   onRangeChange: (range: RevenueTimeRange) => void
-  rangeMap: Record<RevenueTimeRange, RevenueRangeModel>
+  model: RevenueRangeModel
 }
 
 export function RevenuePageView({
   activeRange,
   onRangeChange,
-  rangeMap,
+  model,
 }: RevenuePageViewProps) {
-  const m = rangeMap[activeRange]
+  const m = model
 
   return (
     <div className="flex flex-col gap-6">

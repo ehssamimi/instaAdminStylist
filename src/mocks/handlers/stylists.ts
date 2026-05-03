@@ -6,7 +6,11 @@ export const stylistsHandlers = [
   http.get('/api/admin/stylists', ({ request }) => {
     const url = new URL(request.url)
     const page = Number(url.searchParams.get('page') ?? '1')
-    const perPage = Number(url.searchParams.get('per_page') ?? '10')
+    const perPage = Number(
+      url.searchParams.get('per_page') ??
+        url.searchParams.get('limit') ??
+        '10'
+    )
     const search = (url.searchParams.get('search') ?? '').trim().toLowerCase()
 
     const safePage = Number.isFinite(page) && page > 0 ? page : 1

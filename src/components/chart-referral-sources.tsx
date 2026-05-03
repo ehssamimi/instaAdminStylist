@@ -27,16 +27,8 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
-import { useIsMobile } from "@/hooks/use-mobile"
-import type {
-  DashboardChartRange,
-  ReferralSourceDatum,
-  ReferralSourcesByRange,
-} from "@/models/dashboardOverview"
-
-function totalReferralResponses(data: ReferralSourceDatum[]): number {
-  return data.reduce((sum, d) => sum + d.count, 0)
-}
+import type { DashboardOverviewRange } from "@/models/adminDashboard"
+import type { ReferralSourceDatum } from "@/models/dashboardOverview"
 
 const chartConfig = {
   count: {
@@ -58,6 +50,7 @@ function brandBarFill(count: number, min: number, max: number): string {
 function withBarFills(data: ReferralSourceDatum[]): (ReferralSourceDatum & {
   fill: string
 })[] {
+  if (data.length === 0) return []
   const counts = data.map((d) => d.count)
   const min = Math.min(...counts)
   const max = Math.max(...counts)
@@ -75,28 +68,35 @@ const rangeToggleItemClassName =
   "data-[state=off]:text-muted-foreground data-[state=on]:text-brand-700 data-[state=on]:font-bold " +
   "data-[state=on]:shadow-[inset_0_-2px_0_0_var(--color-brand-700)]"
 
+const RANGE_OPTIONS: { value: DashboardOverviewRange; label: string }[] = [
+  { value: "past_week", label: "Past Week" },
+  { value: "3m", label: "Past 3 Months" },
+  { value: "6m", label: "Past 6 Months" },
+  { value: "1y", label: "Past Year" },
+]
+
 type ChartReferralSourcesProps = {
-  referralSourcesByRange: ReferralSourcesByRange
+  referralSources: ReferralSourceDatum[]
+  totalResponses: number
+  range: DashboardOverviewRange
+  onRangeChange: (next: DashboardOverviewRange) => void
+  loading?: boolean
 }
 
 export function ChartReferralSources({
-  referralSourcesByRange,
+  referralSources,
+  totalResponses,
+  range,
+  onRangeChange,
+  loading = false,
 }: ChartReferralSourcesProps) {
-  const isMobile = useIsMobile()
-  const [timeRange, setTimeRange] = React.useState<DashboardChartRange>('7d')
-
-  React.useEffect(() => {
-    if (isMobile) {
-      setTimeRange('7d')
-    }
-  }, [isMobile])
-
-  const data = React.useMemo(
-    () => referralSourcesByRange[timeRange] ?? referralSourcesByRange['7d'],
-    [referralSourcesByRange, timeRange]
+  const chartData = React.useMemo(
+    () => withBarFills(referralSources),
+    [referralSources]
   )
-  const chartData = React.useMemo(() => withBarFills(data), [data])
-  const total = totalReferralResponses(data)
+
+  const selectLabel =
+    RANGE_OPTIONS.find((o) => o.value === range)?.label ?? "Past Week"
 
   return (
     <Card className="@container/card shadow-none  ">
@@ -104,54 +104,54 @@ export function ChartReferralSources({
         <CardTitle className="text-base font-bold text-gray-900">
           How did users hear about Instastylin?{" "}
           <span className="font-bold">
-            · {total.toLocaleString()} responses
+            · {totalResponses.toLocaleString()} responses
           </span>
         </CardTitle>
         <CardAction>
           <ToggleGroup
             type="single"
-            value={timeRange}
-            onValueChange={(v) => v && setTimeRange(v as DashboardChartRange)}
+            value={range}
+            onValueChange={(v) => {
+              if (v && !loading) onRangeChange(v as DashboardOverviewRange)
+            }}
             variant="default"
+            disabled={loading}
             className="hidden @[767px]/card:flex @[767px]/card:gap-0 @[767px]/card:rounded-none @[767px]/card:bg-transparent @[767px]/card:shadow-none"
           >
-            <ToggleGroupItem value="7d" className={rangeToggleItemClassName}>
-              Past Week
-            </ToggleGroupItem>
-            <ToggleGroupItem value="90d" className={rangeToggleItemClassName}>
-              Past 3 Months
-            </ToggleGroupItem>
-            <ToggleGroupItem value="180d" className={rangeToggleItemClassName}>
-              Past 6 Months
-            </ToggleGroupItem>
-            <ToggleGroupItem value="365d" className={rangeToggleItemClassName}>
-              Past Year
-            </ToggleGroupItem>
+            {RANGE_OPTIONS.map((o) => (
+              <ToggleGroupItem
+                key={o.value}
+                value={o.value}
+                className={rangeToggleItemClassName}
+              >
+                {o.label}
+              </ToggleGroupItem>
+            ))}
           </ToggleGroup>
           <Select
-            value={timeRange}
-            onValueChange={(v) => setTimeRange(v as DashboardChartRange)}
+            value={range}
+            onValueChange={(v) => {
+              if (!loading) onRangeChange(v as DashboardOverviewRange)
+            }}
+            disabled={loading}
           >
             <SelectTrigger
               className="flex w-44 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
               aria-label="Time range"
             >
-              <SelectValue placeholder="Past week" />
+              <SelectValue placeholder={selectLabel} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
-              <SelectItem value="7d" className="rounded-lg">
-                Past Week
-              </SelectItem>
-              <SelectItem value="90d" className="rounded-lg">
-                Past 3 Months
-              </SelectItem>
-              <SelectItem value="180d" className="rounded-lg">
-                Past 6 Months
-              </SelectItem>
-              <SelectItem value="365d" className="rounded-lg">
-                Past Year
-              </SelectItem>
+              {RANGE_OPTIONS.map((o) => (
+                <SelectItem
+                  key={o.value}
+                  value={o.value}
+                  className="rounded-lg"
+                >
+                  {o.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </CardAction>

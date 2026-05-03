@@ -19,6 +19,11 @@ export type StylistDetailsApiDto = {
   isVerified?: boolean
   available?: boolean
   totalCompletedBookings?: number
+  /** Server may send snake_case. */
+  total_completed_bookings?: number
+  totalRevenue?: number | string | null
+  total_revenue?: number | string | null
+  total_sales?: number | string | null
   gender?: string | null
   linkedInUrl?: string | null
   tiktokHandle?: string | null
@@ -30,6 +35,8 @@ export type StylistDetailsApiDto = {
   /** Application verification lifecycle; drives admin styling form editability. */
   verificationStatus?: string | null
   verification_status?: string | null
+  rejectionReason?: string | null
+  rejection_reason?: string | null
 }
 
 export interface StylistRowDto {
@@ -70,6 +77,22 @@ export interface StylistDetailDto extends StylistRowDto {
    * Other values (`null`, `PENDING_REVIEW`, `REJECTED`) keep the form read-only.
    */
   verificationStatus?: string | null
+  rejectionReason?: string | null
+}
+
+/**
+ * Profile header metrics. Values are populated from API `totalCompletedBookings` and
+ * `totalRevenue` (and snake_case equivalents) when detail payload is mapped with
+ * {@link mapStylistDetailsApiToDto}.
+ */
+export function getStylistProfileHeaderStats(stylist: StylistDetailDto): {
+  completedBookings: string
+  totalRevenue: string
+} {
+  return {
+    completedBookings: String(stylist.bookings),
+    totalRevenue: stylist.total_revenue,
+  }
 }
 
 export interface StylistsListResponse {
@@ -175,6 +198,37 @@ function parseRecommendShopsFromApi(raw: unknown): {
   return { ids, other: other.length ? other.join(', ') : null }
 }
 
+function pickTotalCompletedBookings(raw: StylistDetailsApiDto): number {
+  const rec = raw as Record<string, unknown>
+  const v =
+    raw.totalCompletedBookings ??
+    raw.total_completed_bookings ??
+    rec.total_completed_bookings
+  const n = Number(v)
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0
+}
+
+function formatDetailTotalRevenue(raw: StylistDetailsApiDto): string {
+  const rec = raw as Record<string, unknown>
+  const v =
+    raw.totalRevenue ??
+    raw.total_revenue ??
+    raw.total_sales ??
+    rec.totalRevenue ??
+    rec.total_revenue ??
+    rec.total_sales
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(v)
+  }
+  const s = coalesceStr(v)
+  return s ?? '—'
+}
+
 export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDetailDto {
   const first =
     coalesceStr(raw.firstName) ?? coalesceStr(raw.first_name) ?? ''
@@ -185,9 +239,11 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
   const shops = parseRecommendShopsFromApi(raw.recommendShops)
   const image =
     coalesceStr(raw.imageUrl) ?? coalesceStr(raw.profile_picture) ?? null
-  const bookings = raw.totalCompletedBookings ?? 0
+  const bookings = pickTotalCompletedBookings(raw)
+  const total_revenue = formatDetailTotalRevenue(raw)
   const verificationStatusRaw =
     raw.verificationStatus ?? raw.verification_status
+  const rejectionReasonRaw = raw.rejectionReason ?? raw.rejection_reason
 
   return {
     id: String(raw.id),
@@ -196,7 +252,7 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
     last_name: last,
     speciality: specialityLine,
     bookings,
-    total_revenue: '—',
+    total_revenue,
     stylist_since: '—',
     avg_weekly_availability: '—',
     avg_weekly_drop_in: '—',
@@ -230,6 +286,12 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
         : typeof verificationStatusRaw === 'string'
           ? verificationStatusRaw
           : String(verificationStatusRaw),
+    rejectionReason:
+      rejectionReasonRaw === undefined || rejectionReasonRaw === null
+        ? rejectionReasonRaw
+        : typeof rejectionReasonRaw === 'string'
+          ? rejectionReasonRaw
+          : String(rejectionReasonRaw),
   }
 }
 

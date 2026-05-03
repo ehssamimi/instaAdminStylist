@@ -1,6 +1,9 @@
 "use client"
 
-import { BookingActivitySection } from "@/components/booking-activity-section"
+import {
+  BookingActivitySection,
+  type BookingActivitySectionProps,
+} from "@/components/booking-activity-section"
 import type { BookingRowDto } from "@/models/bookings"
 
 export type StylistBookingActivityCardProps = {
@@ -12,13 +15,31 @@ export type StylistBookingActivityCardProps = {
   title?: string
   /** CSV download filename prefix (date appended automatically in export) */
   exportFileNamePrefix?: string
-}
+} & Pick<
+  BookingActivitySectionProps,
+  | "serverPagination"
+  | "currentPage"
+  | "pageSize"
+  | "totalPages"
+  | "totalItemCount"
+  | "onPageChange"
+  | "onPageSizeChange"
+  | "isLoading"
+>
 
 export function StylistBookingActivityCard({
   bookings,
   stylistId,
   title = "Booking Activity",
   exportFileNamePrefix = "stylist_booking_activity",
+  serverPagination,
+  currentPage,
+  pageSize,
+  totalPages,
+  totalItemCount,
+  onPageChange,
+  onPageSizeChange,
+  isLoading,
 }: StylistBookingActivityCardProps) {
   const rowClickContext =
     stylistId != null && stylistId !== ""
@@ -33,6 +54,14 @@ export function StylistBookingActivityCard({
       counterpartColumn="customer"
       costColumnHeader="Total Cost"
       rowClickContext={rowClickContext}
+      serverPagination={serverPagination}
+      currentPage={currentPage}
+      pageSize={pageSize}
+      totalPages={totalPages}
+      totalItemCount={totalItemCount}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
+      isLoading={isLoading}
     />
   )
 }

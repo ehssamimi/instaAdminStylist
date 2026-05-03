@@ -109,19 +109,43 @@ export const navMainAdmin: NavMainItem[] = [
   // },
 ]
 
+type NavSearchParams = Pick<URLSearchParams, "get"> | null | undefined
+
 // Utility to find a nav item for a given pathname (exact or nested match)
-export function matchNavItem(pathname: string): NavMainItem | undefined {
+export function matchNavItem(
+  pathname: string,
+  searchParams?: NavSearchParams
+): NavMainItem | undefined {
+  let resolvedPath = pathname
+
+  /** Booking detail reached from customer or stylist profile — highlight that section, not Booking History. */
+  if (/^\/dashboard\/bookings\/[^/]+$/.test(pathname) && searchParams) {
+    if (
+      searchParams.get("from") === "customer" &&
+      searchParams.get("customerId")
+    ) {
+      resolvedPath = "/dashboard/customers"
+    } else if (
+      searchParams.get("from") === "stylist" &&
+      searchParams.get("stylistId")
+    ) {
+      resolvedPath = "/dashboard/stylists"
+    }
+  }
+
   // Singular /dashboard/stylist/:id is a detail view for the Stylists section
-  const resolvedPath = /^\/dashboard\/stylist(?:\/|$)/.test(pathname)
-    ? "/dashboard/stylists"
-    : /^\/dashboard\/customers\/[^/]+/.test(pathname)
-      ? "/dashboard/customers"
-      : pathname
+  if (/^\/dashboard\/stylist(?:\/|$)/.test(resolvedPath)) {
+    resolvedPath = "/dashboard/stylists"
+  } else if (/^\/dashboard\/customers\/[^/]+/.test(resolvedPath)) {
+    resolvedPath = "/dashboard/customers"
+  }
+
   // Prefer longest match for nested routes
   return navMainAdmin
     .filter(
       (item) =>
-        resolvedPath === item.url || resolvedPath.startsWith(item.url + "/")
+        resolvedPath === item.url ||
+        resolvedPath.startsWith(item.url + "/")
     )
     .sort((a, b) => b.url.length - a.url.length)[0]
 }

@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import { cva } from "class-variance-authority"
+import { cva } from "class-variance-authority";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 export const tableStatusLabels = {
   completed: "Completed",
   scheduled: "Scheduled",
   canceled: "Canceled",
   pending_payment: "Pending payment",
-} as const
+} as const;
 
-export type TableStatus = keyof typeof tableStatusLabels
+export type TableStatus = keyof typeof tableStatusLabels;
 
 const variantByNormalized: Record<
   string,
@@ -22,27 +22,25 @@ const variantByNormalized: Record<
   canceled: "canceled",
   cancelled: "canceled",
   pending_payment: "pending_payment",
-}
+};
 
 function normalizeStatusKey(raw: string): string {
-  return raw.trim().toLowerCase().replace(/-/g, "_")
+  return raw.trim().toLowerCase().replace(/-/g, "_");
 }
 
 export function formatBookingStatusLabel(status: string): string {
-  const key = normalizeStatusKey(status) as TableStatus
+  const key = normalizeStatusKey(status) as TableStatus;
   if (key in tableStatusLabels) {
-    return tableStatusLabels[key]
+    return tableStatusLabels[key];
   }
-  return status
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function resolveVariant(
   status: string
 ): "completed" | "scheduled" | "canceled" | "pending_payment" | "neutral" {
-  const n = normalizeStatusKey(status)
-  return variantByNormalized[n] ?? "neutral"
+  const n = normalizeStatusKey(status);
+  return variantByNormalized[n] ?? "neutral";
 }
 
 const tableStatusBadgeVariants = cva(
@@ -52,6 +50,7 @@ const tableStatusBadgeVariants = cva(
       status: {
         completed: "bg-success-50 text-success-800",
         scheduled: "bg-warning-50 text-warning-800",
+        in_progress: "bg-warning-50 text-warning-800",
         canceled: "bg-error-50 text-error-800 ",
         pending_payment: "bg-warning-50 text-warning-800",
         /** Unknown / unlisted API statuses */
@@ -62,20 +61,22 @@ const tableStatusBadgeVariants = cva(
       status: "neutral",
     },
   }
-)
+);
 
 export function TableStatusBadge({
   status,
   className,
 }: {
-  status: string
-  className?: string
+  status: string;
+  className?: string;
 }) {
-  const variant = resolveVariant(status)
-  const label = formatBookingStatusLabel(status)
+  const variant = resolveVariant(status);
+  const label = formatBookingStatusLabel(status);
   return (
-    <span className={cn(tableStatusBadgeVariants({ status: variant }), className)}>
+    <span
+      className={cn(tableStatusBadgeVariants({ status: variant }), className)}
+    >
       {label}
     </span>
-  )
+  );
 }

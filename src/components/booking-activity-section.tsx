@@ -28,6 +28,16 @@ export type BookingActivitySectionProps = {
   counterpartColumn: "customer" | "stylist"
   costColumnHeader?: "Total Cost" | "Cost"
   rowClickContext?: BookingActivityRowClickContext
+  /** When set, pagination is server-driven (e.g. customer profile API). */
+  serverPagination?: boolean
+  currentPage?: number
+  pageSize?: number
+  totalPages?: number
+  totalItemCount?: number
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (pageSize: number) => void
+  /** Shows spinner overlay while bookings page is refetching. */
+  isLoading?: boolean
 }
 
 export function BookingActivitySection({
@@ -37,6 +47,14 @@ export function BookingActivitySection({
   counterpartColumn,
   costColumnHeader = "Total Cost",
   rowClickContext = { kind: "plain" },
+  serverPagination,
+  currentPage,
+  pageSize,
+  totalPages,
+  totalItemCount,
+  onPageChange,
+  onPageSizeChange,
+  isLoading,
 }: BookingActivitySectionProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
@@ -214,6 +232,14 @@ export function BookingActivitySection({
           schema={bookingRowSchema}
           columns={columns as ColumnDef<unknown>[]}
           onRowClick={handleRowClick}
+          isLoading={isLoading}
+          serverPagination={serverPagination}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalItemCount={totalItemCount}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
         />
       </div>
     </section>

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 
 import { useRouter } from "next/navigation"
 import { removeToken } from "@/lib/jwt-utils"
@@ -32,7 +32,8 @@ export function AppSidebar({
   className,
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname();
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { user } = useUser();
   const router = useRouter()
   const [navItems, setNavItems] = React.useState<typeof navMainAdmin>([])
@@ -50,7 +51,7 @@ export function AppSidebar({
     return withLeading !== "/" ? withLeading.replace(/\/+$/, "") : withLeading
   }
 
-  const matchedNav = matchNavItem(pathname)
+  const matchedNav = matchNavItem(pathname, searchParams)
   const activeHref = matchedNav ? normalize(matchedNav.url) : undefined
 
   return (

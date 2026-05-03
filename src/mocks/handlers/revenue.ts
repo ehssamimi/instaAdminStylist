@@ -1,13 +1,14 @@
 import { http, HttpResponse } from 'msw'
-import { revenueOverviewMock } from '@/mocks/data/revenue-overview'
-import type { RevenueOverviewResponse } from '@/models/revenueOverview'
+import { revenueOverviewMockAsLiveApi } from '@/mocks/data/revenue-overview'
 
+/** Dev-only: mirrors `/api/admin/revenue?range=` live shape (no bundled legacy payload). */
 export const revenueHandlers = [
-  http.get('/api/admin/revenue', () => {
-    const body: RevenueOverviewResponse = {
+  http.get('/api/admin/revenue', ({ request }) => {
+    const range =
+      new URL(request.url).searchParams.get('range') ?? 'past_week'
+    return HttpResponse.json({
       success: true,
-      data: revenueOverviewMock,
-    }
-    return HttpResponse.json(body)
+      data: revenueOverviewMockAsLiveApi(range),
+    })
   }),
 ]

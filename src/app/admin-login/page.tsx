@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft, Mail } from 'lucide-react'
+import { Loader2, ArrowLeft, Mail,MailOpen, Check } from 'lucide-react'
 import OtpInput from 'react-otp-input';
 
 import {
@@ -39,6 +39,8 @@ const LoginPage = () => {
   const [forgotResendTimer, setForgotResendTimer] = useState(0)
   const [isForgotSending, setIsForgotSending] = useState(false)
   const [isForgotResending, setIsForgotResending] = useState(false)
+  /** Set after successful forgot-password API — drives inline success notice + primary button state */
+  const [forgotSuccessEmail, setForgotSuccessEmail] = useState<string | null>(null)
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,6 +50,7 @@ const LoginPage = () => {
   })
   const forgotForm = useForm<z.infer<typeof forgotEmailSchema>>({
     resolver: zodResolver(forgotEmailSchema),
+    mode: 'onChange',
     defaultValues: {
       email: '',
     },
@@ -146,24 +149,28 @@ const LoginPage = () => {
   const openForgotPassword = () => {
     const loginEmail = form.getValues('email')
     if (loginEmail) {
-      forgotForm.setValue('email', loginEmail)
+      forgotForm.setValue('email', loginEmail, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      })
     }
+    setForgotSuccessEmail(null)
     setMode('forgot-password')
   }
 
   const handleBackFromForgotPassword = () => {
     setMode('login')
     setForgotResendTimer(0)
+    setForgotSuccessEmail(null)
   }
 
   async function onForgotSubmit(values: z.infer<typeof forgotEmailSchema>) {
     setIsForgotSending(true)
     try {
-      const response = await authApi.forgotPassword(values.email.toLowerCase())
-      toast.success(
-        (response as { message?: string }).message ??
-          'If an account exists for this email, you will receive reset instructions shortly.',
-      )
+      await authApi.forgotPassword(values.email.toLowerCase())
+      const sentTo = values.email.toLowerCase()
+      setForgotSuccessEmail(sentTo)
       setForgotResendTimer(60)
     } catch (error) {
       let errorMessage = 'Could not send reset email. Please try again.'
@@ -187,8 +194,9 @@ const LoginPage = () => {
     }
     setIsForgotResending(true)
     try {
-      await authApi.forgotPassword(parsed.data.toLowerCase())
-      toast.success('Reset instructions sent again.')
+      const normalized = parsed.data.toLowerCase()
+      await authApi.forgotPassword(normalized)
+      setForgotSuccessEmail(normalized)
       setForgotResendTimer(60)
     } catch (error) {
       let errorMessage = 'Could not resend email. Please try again.'
@@ -226,10 +234,24 @@ const LoginPage = () => {
     return () => clearInterval(interval)
   }, [forgotResendTimer])
 
+  const watchedForgotEmail = forgotForm.watch('email')
+  useEffect(() => {
+    if (!forgotSuccessEmail) return
+    const cur = watchedForgotEmail.trim().toLowerCase()
+    if (cur !== forgotSuccessEmail.toLowerCase()) {
+      setForgotSuccessEmail(null)
+    }
+  }, [watchedForgotEmail, forgotSuccessEmail])
+
+  const forgotSubmitDisabled =
+    !forgotForm.formState.isValid ||
+    isForgotSending ||
+    Boolean(forgotSuccessEmail)
+
   return (
     <div className="min-h-screen bg-bg-main flex flex-col">
       {/* Header */}
-      <header className="py-6 px-8 bg-surface border-b border-border-soft">
+      <header className="py-6 px-8 bg-surface ">
         <div className="max-w-7xl mx-auto">
           <Link href="/" className='flex justify-center items-center '>
             <Image src="/logo.svg" alt="Insta Styling" width={180} height={32} />
@@ -239,89 +261,95 @@ const LoginPage = () => {
 
       {/* Main Content */}
       <main className="flex-grow flex items-center justify-center p-6">
-        <div className="rounded-2xl overflow-hidden flex flex-col md:flex-row">
+        <div className="rounded-xl overflow-hidden flex flex-col md:flex-row">
 
           {/* Login Form / OTP Form */}
-          <div className="p-8 md:p-12 flex-grow-0 flex-shrink-0 basis-[560px] bg-white">
+          <div className="flex-grow-0 flex-shrink-0 basis-[486px] bg-white py-[60px] px-6">
             {mode === 'login' ? (
-              <>
-                <h1 className="text-3xl font-satoshi font-bold text-center text-gray-900 mb-6">Login</h1>
+              <div className="flex flex-col gap-5">
+                <h1 className="text-center font-satoshi text-3xl font-bold text-gray-900">
+                  Login
+                </h1>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                    <div className="grid gap-4">
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItemInput
-                            id="email"
-                            label="Email"
-                            placeholder="matias@touchzenmedia.com"
-                            type="email"
-                            autoComplete="email"
-                            leftIcon={<Mail className="h-4 w-4" />}
-                            className="h-[var(--height-form-field)]"
-                            {...field}
-                          />
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItemInput
-                            id="password"
-                            label="Password"
-                            placeholder="********"
-                            autoComplete="current-password"
-                            passwordToggle
-                            className="h-[var(--height-form-field)]"
-                            {...field}
-                          />
-                        )}
-                      />
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="flex flex-col gap-5"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItemInput
+                          id="email"
+                          label="Email"
+                          placeholder="matias@touchzenmedia.com"
+                          type="email"
+                          autoComplete="email"
+                          leftIcon={<Mail className="h-4 w-4" />}
+                          className="h-[var(--height-form-field)]"
+                          {...field}
+                        />
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItemInput
+                          id="password"
+                          label="Password"
+                          placeholder="********"
+                          autoComplete="current-password"
+                          passwordToggle
+                          className="h-[var(--height-form-field)]"
+                          {...field}
+                        />
+                      )}
+                    />
+
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={openForgotPassword}
+                        className="font-satoshi text-base font-bold not-italic leading-[130%] text-neutral-black_01 underline decoration-solid decoration-auto decoration-skip-ink-none underline-offset-auto [text-underline-position:from-font] hover:opacity-90"
+                      >
+                        Forgot Password?
+                      </button>
                     </div>
 
-                    <div className="flex w-full flex-col gap-4">
-                      <div className="text-center">
-                        <button
-                          type="button"
-                          onClick={openForgotPassword}
-                          className="font-satoshi text-base font-bold not-italic leading-[130%] text-neutral-black_01 underline decoration-solid decoration-auto decoration-skip-ink-none underline-offset-auto [text-underline-position:from-font] hover:opacity-90"
-                        >
-                          Forgot Password?
-                        </button>
-                      </div>
-
-                      <Button type="submit"
-                        className="w-full font-satoshi  text-base h-12 bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors "
-                        disabled={isLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isLoading ? 'Logging in...' : 'Login'}
-                      </Button>
-                    </div>
+                    <Button
+                      type="submit"
+                      className="h-12 w-full rounded-lg bg-black px-6 py-3 font-satoshi text-base font-medium text-white transition-colors hover:bg-gray-800"
+                      disabled={isLoading}
+                    >
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isLoading ? 'Logging in...' : 'Login'}
+                    </Button>
                   </form>
                 </Form>
-              </>
+              </div>
             ) : mode === 'forgot-password' ? (
-              <div className="space-y-8">
-                <div className="flex flex-col items-center text-center">
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col items-center gap-5 text-center">
                   <div
-                    className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand-100"
+                    className="flex h-24 w-24 items-center justify-center rounded-full bg-brand-50"
                     aria-hidden
                   >
-                    <Mail className="h-8 w-8 text-brand-600" strokeWidth={1.75} />
+                    <MailOpen className="h-[43px] w-[45px] text-brand-400" strokeWidth={2.3} />
                   </div>
-                  <h1 className="font-satoshi text-3xl font-bold text-neutral-black_03 mb-3">
+                  <h1 className="font-satoshi text-3xl font-bold text-neutral-black_03">
                     Reset Your Password
                   </h1>
-                  <p className="font-satoshi text-base font-normal leading-[150%] text-gray-600 max-w-sm">
+                  <p className="font-satoshi text-base font-normal leading-[150%] text-gray-600 max-w-md">
                     Enter your email and we&apos;ll send you instructions to set a new one.
                   </p>
                 </div>
 
                 <Form {...forgotForm}>
-                  <form onSubmit={forgotForm.handleSubmit(onForgotSubmit)} className="space-y-6">
+                  <form
+                    onSubmit={forgotForm.handleSubmit(onForgotSubmit)}
+                    className="flex flex-col gap-5"
+                  >
                     <FormField
                       control={forgotForm.control}
                       name="email"
@@ -335,31 +363,45 @@ const LoginPage = () => {
                           leftIcon={<Mail className="h-4 w-4" />}
                           className="h-[var(--height-form-field)]"
                           {...field}
+                          value={field.value ?? ''}
+                          onInput={(event) => {
+                            const value = event.currentTarget.value
+                            if (value !== field.value) {
+                              forgotForm.setValue('email', value, {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true,
+                              })
+                            }
+                          }}
                         />
                       )}
                     />
 
-                    <p className="text-center font-satoshi text-sm text-gray-600">
-                      {`Didn't get an email?`}{' '}
-                      {forgotResendTimer > 0 ? (
-                        <span className="text-gray-400">Resend in {forgotResendTimer}s</span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleForgotResend}
-                          disabled={isForgotResending}
-                          className="font-semibold text-brand-600 underline decoration-solid underline-offset-2 hover:opacity-90 disabled:opacity-60"
-                        >
-                          {isForgotResending ? 'Sending…' : 'Resend'}
-                        </button>
-                      )}
-                    </p>
+                    {forgotSuccessEmail ? (
+                      <p className="text-center font-satoshi text-gray-600">
+                        {`Didn't get an email?`}{' '}
+                        {forgotResendTimer > 0 ? (
+                          <span className="text-gray-400">Resend in {forgotResendTimer}s</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleForgotResend}
+                            disabled={isForgotResending}
+                            className="text-brand-600 underline decoration-solid underline-offset-2 hover:opacity-90 disabled:opacity-60"
+                          >
+                            {isForgotResending ? 'Sending…' : 'Resend'}
+                          </button>
+                        )}
+                      </p>
+                    ) : null}
 
-                    <div className="flex w-full flex-col gap-3 pt-2">
+                    {/* Tighter stack between primary + secondary (design: not 20px between them) */}
+                    <div className="flex w-full flex-col gap-2">
                       <Button
                         type="submit"
-                        className="w-full font-satoshi text-base h-12 bg-black text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-                        disabled={isForgotSending}
+                        className="w-full font-satoshi text-base h-12 bg-black text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:hover:bg-gray-200"
+                        disabled={forgotSubmitDisabled}
                       >
                         {isForgotSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isForgotSending ? 'Sending…' : 'Send Reset Link'}
@@ -373,6 +415,28 @@ const LoginPage = () => {
                         Back to Login
                       </Button>
                     </div>
+
+                    {forgotSuccessEmail ? (
+                      <div
+                        className="flex items-start gap-2 self-stretch rounded-xl border border-[#48C1B5] bg-[#F6FFF9] px-2 py-3"
+                        role="status"
+                      >
+                        <div
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#48C1B5]"
+                          aria-hidden
+                        >
+                          <Check className="h-4 w-4 text-white" strokeWidth={2.5} />
+                        </div>
+                        <div className="min-w-0 flex-1 font-satoshi text-sm leading-normal text-gray-700">
+                          <p className="font-bold text-gray-900">Success!</p>
+                          <p className="mt-1">
+                            We have sent you an email to{' '}
+                            <span className="font-bold">{forgotSuccessEmail}</span> with a link to
+                            reset your password.
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
                   </form>
                 </Form>
               </div>

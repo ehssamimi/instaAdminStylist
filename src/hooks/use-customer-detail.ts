@@ -1,53 +1,58 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import type { CustomerDetailDto } from '@/models/customer'
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import {
+  adminUsersApi,
+  type CustomerBookingsQueryParams,
+} from "@/lib/api"
+import type { CustomerDetailDto } from "@/models/customer"
+import type { CustomerBookingsPageMeta } from "@/models/customerBookings"
 
-export function useCustomerDetail(id: string): {
-  data: CustomerDetailDto | null
+export function customerDetailQueryKey(
+  customerId: string,
+  bookingsParams: CustomerBookingsQueryParams
+) {
+  return [
+    "customer-detail",
+    customerId,
+    bookingsParams.page,
+    bookingsParams.pageSize,
+  ] as const
+}
+
+export function useCustomerDetail(
+  customerId: string,
+  bookingsParams: CustomerBookingsQueryParams
+): {
+  customer: CustomerDetailDto | null
+  bookingsMeta: CustomerBookingsPageMeta | null
   loading: boolean
+  isFetching: boolean
   error: Error | null
+  refetch: () => void
 } {
-  const [data, setData] = useState<CustomerDetailDto | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const enabled = Boolean(customerId?.trim())
 
-  useEffect(() => {
-    if (!id?.trim()) {
-      setData(null)
-      setError(null)
-      setLoading(false)
-      return
-    }
+  const query = useQuery({
+    queryKey: customerDetailQueryKey(customerId, bookingsParams),
+    queryFn: () =>
+      adminUsersApi.getCustomerBookings(customerId.trim(), bookingsParams),
+    enabled,
+    staleTime: 30_000,
+    gcTime: 300_000,
+    placeholderData: keepPreviousData,
+  })
 
-    let cancelled = false
-    setLoading(true)
+  const payload = query.data
 
-    void (async () => {
-      try {
-        const { getMockCustomerDetail } = await import('@/lib/mock-customers')
-        if (cancelled) return
-        setData(getMockCustomerDetail(id))
-        setError(null)
-      } catch (err: unknown) {
-        if (cancelled) return
-        setData(null)
-        setError(
-          err instanceof Error
-            ? err
-            : new Error('Failed to load customer details')
-        )
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [id])
-
-  return { data, loading, error }
+  return {
+    customer: payload?.customer ?? null,
+    bookingsMeta: payload?.meta ?? null,
+    loading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error instanceof Error ? query.error : null,
+    refetch: () => {
+      void query.refetch()
+    },
+  }
 }

@@ -3,6 +3,7 @@ import { backendApiBaseFromEnv } from '@/lib/backend-api-url'
 
 /**
  * Proxies GET /api/admin/bookings to the configured backend.
+ * Forwards query params (e.g. `page`, `limit`, `search`, `stylistId`, date filters).
  * Mock data lives in `@/lib/mock-bookings` for MSW (optional) and stylist fixtures only.
  */
 export async function GET(request: Request) {

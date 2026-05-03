@@ -3,8 +3,8 @@ export interface ForgotPasswordRequest {
 }
 
 export interface ForgotPasswordResponse {
-  message: string
-  code: string
+  email: string
+  success: boolean
 }
 
 
@@ -16,12 +16,19 @@ export interface VerifyPasswordResetOtpResponse {
 }
 
 export interface ResetPasswordRequest {
-  reset_token: string
+  token: string
   password: string
-  password_confirmation: string
 }
 
 export interface ResetPasswordResponse {
   success: boolean
   message: string
+}
+
+/** POST `/auth/verify-password?token=…` — body is `{ password }` only. */
+export interface VerifyPasswordResponse {
+  /** When false on HTTP 200, the reset failed without throwing — handle as an error. */
+  isValid?: boolean
+  success?: boolean
+  message?: string
 }

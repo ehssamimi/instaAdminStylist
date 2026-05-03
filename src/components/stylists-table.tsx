@@ -13,6 +13,15 @@ import { useStylists } from '@/hooks/use-stylists'
 import type { StylistRowDto } from '@/models/stylists'
 import { EachContainer } from './each-container'
 
+function stylistAvatarInitials(first: string, last: string): string {
+  const f = first.trim().charAt(0).toUpperCase()
+  const l = last.trim().charAt(0).toUpperCase()
+  if (f && l) return `${f}${l}`
+  if (f) return f
+  if (l) return l
+  return '—'
+}
+
 const stylistSchema = z.object({
   id: z.string(),
   profile_picture: z.string().nullable(),
@@ -20,7 +29,7 @@ const stylistSchema = z.object({
   first_name: z.string(),
   speciality: z.string(),
   bookings: z.number(),
-  total_sales: z.string(),
+  total_revenue: z.string(),
   stylist_since: z.string(),
   avg_weekly_availability: z.string(),
   avg_weekly_drop_in: z.string(),
@@ -62,22 +71,37 @@ export function StylistsTable() {
         accessorKey: 'profile_picture',
         header: 'Profile Picture',
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="h-14 w-14 overflow-hidden rounded-md bg-gray-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={row.original.profile_picture ?? ''}
-              alt={`${row.original.first_name} ${row.original.last_name}`}
-              className="h-full w-full object-cover"
-            />
-          </div>
-        ),
+        cell: ({ row }) => {
+          const url = row.original.profile_picture?.trim()
+          return (
+            <div className="relative h-14 w-14 overflow-hidden rounded-md bg-gray-100">
+              {url ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={url}
+                  alt={`${row.original.first_name} ${row.original.last_name}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span
+                  className="flex h-full w-full items-center justify-center font-satoshi text-sm font-semibold tracking-tight text-gray-600"
+                  aria-label={`No profile photo for ${row.original.first_name} ${row.original.last_name}`}
+                >
+                  {stylistAvatarInitials(
+                    row.original.first_name,
+                    row.original.last_name
+                  )}
+                </span>
+              )}
+            </div>
+          )
+        },
       },
       { accessorKey: 'last_name', header: 'Last Name', enableSorting: false },
       { accessorKey: 'first_name', header: 'First Name', enableSorting: false },
       { accessorKey: 'speciality', header: 'Speciality', enableSorting: false },
       { accessorKey: 'bookings', header: 'Bookings', enableSorting: false },
-      { accessorKey: 'total_revenue', header: 'Total Revenue', enableSorting: false },
+      { accessorKey: 'total_revenue', header: 'Total Sales', enableSorting: false },
       { accessorKey: 'stylist_since', header: 'Stylists Since', enableSorting: false },
       {
         accessorKey: 'avg_weekly_availability',

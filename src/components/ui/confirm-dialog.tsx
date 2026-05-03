@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { AlertTriangle, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { HeaderActionButton } from "@/components/header-action-button";
 import {
   Dialog,
   DialogContent,
@@ -11,24 +11,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 type ConfirmDialogProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   /** Body copy under the title */
-  description: string
-  title?: string
+  description: string;
+  title?: string;
   /** Called when the user confirms. Dialog closes after this resolves; stays open if it rejects. */
-  onConfirm: () => void | Promise<void>
+  onConfirm: () => void | Promise<void>;
   /** Optional; defaults to closing the dialog without calling `onConfirm`. */
-  onCancel?: () => void
-  confirmLabel?: string
-  cancelLabel?: string
-  showCloseButton?: boolean
-  className?: string
-}
+  onCancel?: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  showCloseButton?: boolean;
+  className?: string;
+};
 
 export function ConfirmDialog({
   open,
@@ -42,26 +42,28 @@ export function ConfirmDialog({
   showCloseButton = false,
   className,
 }: ConfirmDialogProps) {
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    if (!open) setPending(false)
-  }, [open])
+    if (!open) setPending(false);
+  }, [open]);
 
   function handleCancel() {
-    if (pending) return
-    onCancel?.()
-    onOpenChange(false)
+    if (pending) return;
+    onCancel?.();
+    onOpenChange(false);
   }
 
   async function handleConfirm() {
-    if (pending) return
-    setPending(true)
+    if (pending) return;
+    setPending(true);
     try {
-      await Promise.resolve(onConfirm())
-      onOpenChange(false)
+      await Promise.resolve(onConfirm());
+      onOpenChange(false);
+    } catch {
+      return;
     } finally {
-      setPending(false)
+      setPending(false);
     }
   }
 
@@ -69,7 +71,7 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "grid grid-cols-1 content-start justify-items-center gap-4 p-0 px-[40px] py-[32px] font-satoshi sm:max-w-md",
+          "grid grid-cols-1 content-start justify-items-center gap-4 p-0 px-[40px] py-[32px] font-satoshi sm:max-w-lg",
           className
         )}
         showCloseButton={showCloseButton}
@@ -78,30 +80,34 @@ export function ConfirmDialog({
           className="flex size-12 items-center justify-center rounded-full bg-warning-100"
           aria-hidden
         >
-          <AlertTriangle className="size-6 text-warning-500" strokeWidth={1.75} />
+          <AlertTriangle
+            className="size-6 text-warning-500"
+            strokeWidth={2.3}
+          />
         </div>
-        <DialogHeader className="w-full space-y-4 text-center sm:text-center">
-          <DialogTitle className="font-satoshi text-xl font-bold text-black mb-2">
+        <DialogHeader className="w-full  text-center sm:text-center">
+          <DialogTitle className="font-satoshi text-xl font-bold text-black  ">
             {title}
           </DialogTitle>
-          <DialogDescription className="font-satoshi text-sm leading-relaxed text-gray-600">
+          <DialogDescription className="font-satoshi text-base  not-first: leading-relaxed text-gray-500">
             {description}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="grid w-full max-w-full grid-cols-2 gap-3 p-0 sm:grid-cols-2">
-          <Button
+          <HeaderActionButton
             type="button"
-            variant="outline"
+            variant="neutral"
             disabled={pending}
-            className="w-full min-h-11 border-black bg-white font-satoshi font-bold text-black hover:bg-gray-50"
+            className="w-full min-h-11"
             onClick={handleCancel}
           >
             {cancelLabel}
-          </Button>
-          <Button
+          </HeaderActionButton>
+          <HeaderActionButton
             type="button"
+            variant="primary"
             disabled={pending}
-            className="w-full min-h-11 bg-black font-satoshi font-bold text-white hover:bg-neutral-800"
+            className="w-full min-h-11"
             onClick={() => void handleConfirm()}
           >
             {pending ? (
@@ -109,9 +115,9 @@ export function ConfirmDialog({
             ) : (
               confirmLabel
             )}
-          </Button>
+          </HeaderActionButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

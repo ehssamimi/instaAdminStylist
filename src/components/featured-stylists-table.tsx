@@ -1,6 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent,
+} from 'react'
 import { z } from 'zod'
 import { ColumnDef } from '@tanstack/react-table'
 import { FilePlus2, Trash2 } from 'lucide-react'
@@ -27,6 +33,49 @@ const featuredStylistRowSchema = z.object({
   avg_weekly_availability: z.string(),
   avg_weekly_drop_in: z.string(),
 })
+
+function firstLetterOfStylistName(first: string, last: string): string {
+  const f = first.trim()
+  const l = last.trim()
+  if (f) return f.charAt(0).toUpperCase()
+  if (l) return l.charAt(0).toUpperCase()
+  return '?'
+}
+
+function FeaturedStylistProfileAvatar({ row }: { row: StylistRowDto }) {
+  const [imageFailed, setImageFailed] = useState(false)
+  const src = row.profile_picture?.trim() ?? ''
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [row.id, src])
+  const label =
+    [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || 'Stylist'
+  const letter = firstLetterOfStylistName(row.first_name, row.last_name)
+  const showImage = Boolean(src) && !imageFailed
+
+  return (
+    <div className="h-14 w-14 overflow-hidden rounded-md bg-gray-100">
+      {showImage ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={src}
+          alt={label}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <span
+          className="flex h-full w-full items-center justify-center font-satoshi text-sm font-semibold tracking-tight text-gray-600"
+          aria-label={`No profile photo for ${label}`}
+        >
+          {letter}
+        </span>
+      )}
+    </div>
+  )
+}
 
 export function FeaturedStylistsTable() {
   const {
@@ -100,16 +149,7 @@ export function FeaturedStylistsTable() {
         accessorKey: 'profile_picture',
         header: 'Profile Picture',
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="h-14 w-14 overflow-hidden rounded-md bg-gray-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={row.original.profile_picture ?? ''}
-              alt={`${row.original.first_name} ${row.original.last_name}`}
-              className="h-full w-full object-cover"
-            />
-          </div>
-        ),
+        cell: ({ row }) => <FeaturedStylistProfileAvatar row={row.original} />,
       },
       {
         id: 'stylist',

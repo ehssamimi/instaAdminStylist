@@ -7,9 +7,13 @@ import { format, isValid, parseISO } from "date-fns"
 import { DataTable } from "@/components/data-table"
 import { SearchInput } from "@/components/search-input"
 import { EachContainer } from "@/components/each-container"
-import { customerRowSchema, type CustomerRow } from "@/lib/mock-customers"
+import {
+  customerRowSchema,
+  type CustomerRow,
+} from "@/models/customersList"
 
 function formatLastBooking(value: string): string {
+  if (!value.trim()) return "—"
   const d = parseISO(value)
   if (isValid(d)) return format(d, "MM/dd/yyyy")
   const fallback = new Date(value)
@@ -21,12 +25,28 @@ export type CustomersPageViewProps = {
   rows: CustomerRow[]
   onSearch: (query: string) => void
   onRowClick?: (row: CustomerRow) => void
+  isLoading?: boolean
+  serverPagination?: boolean
+  currentPage?: number
+  pageSize?: number
+  totalPages?: number
+  totalItemCount?: number
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (pageSize: number) => void
 }
 
 export function CustomersPageView({
   rows,
   onSearch,
   onRowClick,
+  isLoading,
+  serverPagination,
+  currentPage,
+  pageSize,
+  totalPages,
+  totalItemCount,
+  onPageChange,
+  onPageSizeChange,
 }: CustomersPageViewProps) {
   const columns: ColumnDef<CustomerRow>[] = useMemo(
     () => [
@@ -84,6 +104,8 @@ export function CustomersPageView({
           <SearchInput
             onSearch={handleSearch}
             placeholder="Search"
+            disabled={!!isLoading}
+            isLoading={!!isLoading}
             className="h-[var(--height-form-field)]"
           />
         </div>
@@ -94,9 +116,17 @@ export function CustomersPageView({
           data={rows}
           schema={customerRowSchema}
           columns={columns as ColumnDef<unknown>[]}
+          isLoading={isLoading}
           onRowClick={
             onRowClick ? (r) => onRowClick(r as CustomerRow) : undefined
           }
+          serverPagination={serverPagination}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalItemCount={totalItemCount}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
         />
       </div>
     </EachContainer>

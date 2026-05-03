@@ -1,36 +1,55 @@
 import { NextResponse } from 'next/server'
-import { adminRouteUsesMock } from '@/lib/admin-route-mock'
 import { backendApiBaseFromEnv } from '@/lib/backend-api-url'
+import { revenueQueryParamForBackend } from '@/lib/revenue-dashboard'
 
 /**
- * GET /api/admin/revenue — revenue charts + optional `summaryByRange` for stat cards.
- * - Development: returns mock JSON (same pattern as `/api/admin/dashboard`).
- * - Set `NEXT_PUBLIC_REVENUE_USE_LIVE_API=true` to proxy to the backend.
- * - Production + `ADMIN_API_USE_MOCK=true`: returns mock.
+ * GET /api/admin/revenue — proxies to `{NEXT_PUBLIC_API_URL}/api/admin/revenue`
+ * Forwards `range` to the backend; `past_week` is rewritten to `week` (revenue API contract).
+ *
+ * - When `NEXT_PUBLIC_API_URL` is set: forwards to the backend.
+ * - `ADMIN_API_USE_MOCK=true`: returns local mock (offline / deploy without backend).
+ * - Development with no API URL: returns mock so the page still loads offline.
+ *
+ * Live response shape (unwrapped or `{ success, data }`):
+ * `platformRevenue`, `totalBookings`, `avgRevenue`, `performance: [{ date, revenue }]`.
  */
 export async function GET(request: Request) {
-  const useLive =
-    process.env.NEXT_PUBLIC_REVENUE_USE_LIVE_API === 'true'
+  const apiBase = backendApiBaseFromEnv()
+  const forceMock = process.env.ADMIN_API_USE_MOCK === 'true'
 
-  if (adminRouteUsesMock(useLive)) {
-    const { revenueOverviewMock } = await import(
+  if (forceMock) {
+    const range =
+      new URL(request.url).searchParams.get('range') ?? 'past_week'
+    const { revenueOverviewMockAsLiveApi } = await import(
       '@/mocks/data/revenue-overview'
     )
     return NextResponse.json({
       success: true,
-      data: revenueOverviewMock,
+      data: revenueOverviewMockAsLiveApi(range),
     })
   }
 
-  const apiBase = backendApiBaseFromEnv()
   if (!apiBase) {
+    if (process.env.NODE_ENV === 'development') {
+      const range =
+        new URL(request.url).searchParams.get('range') ?? 'past_week'
+      const { revenueOverviewMockAsLiveApi } = await import(
+        '@/mocks/data/revenue-overview'
+      )
+      return NextResponse.json({
+        success: true,
+        data: revenueOverviewMockAsLiveApi(range),
+      })
+    }
     return NextResponse.json(
       { success: false, message: 'NEXT_PUBLIC_API_URL is not set' },
       { status: 500 }
     )
   }
 
-  const url = `${apiBase}/admin/revenue`
+  const requested = new URL(request.url).searchParams.get('range')
+  const backendRange = revenueQueryParamForBackend(requested)
+  const url = `${apiBase}/admin/revenue?range=${encodeURIComponent(backendRange)}`
   const auth = request.headers.get('authorization')
 
   const res = await fetch(url, {

@@ -6,12 +6,26 @@ import { BookingActivitySection } from '@/components/booking-activity-section'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { CustomerDetailDto } from '@/models/customer'
 
+export type CustomerBookingsPaginationProps = {
+  currentPage: number
+  pageSize: number
+  totalPages: number
+  totalItemCount: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (pageSize: number) => void
+}
+
 export type CustomerProfilePageViewProps = {
   customer: CustomerDetailDto | null
   backHref: string
   backAriaLabel?: string
   loading?: boolean
   errorMessage?: string | null
+  /** Server-driven booking table pagination (`GET .../users/:id/bookings`). */
+  bookingsPagination?: CustomerBookingsPaginationProps | null
+  /** Refetch indicator on the bookings table (page change). */
+  bookingsTableLoading?: boolean
+  onRetry?: () => void
 }
 
 function CustomerProfileSkeleton() {
@@ -46,6 +60,9 @@ export function CustomerProfilePageView({
   backAriaLabel = 'Back to customers',
   loading = false,
   errorMessage = null,
+  bookingsPagination,
+  bookingsTableLoading,
+  onRetry,
 }: CustomerProfilePageViewProps) {
   return (
     <div className="-m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
@@ -60,9 +77,21 @@ export function CustomerProfilePageView({
       {loading && <CustomerProfileSkeleton />}
 
       {errorMessage && !loading && (
-        <p className="font-satoshi text-sm text-error-600" role="alert">
-          {errorMessage}
-        </p>
+        <div
+          className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 font-satoshi text-sm text-error-600"
+          role="alert"
+        >
+          <span>{errorMessage}</span>
+          {onRetry ? (
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              onClick={onRetry}
+            >
+              Retry
+            </button>
+          ) : null}
+        </div>
       )}
 
       {!loading && !customer && !errorMessage && (
@@ -93,6 +122,14 @@ export function CustomerProfilePageView({
               kind: 'customer',
               customerId: customer.id,
             }}
+            serverPagination={Boolean(bookingsPagination)}
+            currentPage={bookingsPagination?.currentPage}
+            pageSize={bookingsPagination?.pageSize}
+            totalPages={bookingsPagination?.totalPages}
+            totalItemCount={bookingsPagination?.totalItemCount}
+            onPageChange={bookingsPagination?.onPageChange}
+            onPageSizeChange={bookingsPagination?.onPageSizeChange}
+            isLoading={bookingsTableLoading}
           />
         </>
       )}

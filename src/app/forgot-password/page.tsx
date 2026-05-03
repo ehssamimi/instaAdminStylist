@@ -77,7 +77,9 @@ export default function ForgetPasswordPreview() {
   async function onEmailSubmit(values: z.infer<typeof emailFormSchema>) {
     try {
       const response = await authApi.forgotPassword(values.email)
-      toast.success((response as { message: string }).message)
+      toast.success(
+        `If an account exists, we sent instructions to ${response.email}.`
+      )
       setEmail(values.email)
       setStep('otp')
     } catch (error) {
@@ -127,9 +129,8 @@ export default function ForgetPasswordPreview() {
   async function onResetPasswordSubmit(values: z.infer<typeof resetPasswordSchema>) {
     try {
       const response = await authApi.resetPassword({
-        reset_token: resetToken,
+        token: resetToken,
         password: values.password,
-        password_confirmation: values.password_confirmation,
       })
       toast.success(response.message || 'Password reset successfully!')
       router.push('/admin-login')

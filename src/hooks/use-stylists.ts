@@ -21,6 +21,13 @@ export function useStylists() {
       .getList({ page, per_page: perPage, search: search || undefined })
       .then((res) => {
         if (cancelled) return
+        if (!res.success) {
+          setData([])
+          setTotalPages(1)
+          setTotal(0)
+          setError(new Error('Failed to load stylists'))
+          return
+        }
         setData(res.data)
         setTotalPages(res.meta.totalPages)
         setTotal(res.meta.total)

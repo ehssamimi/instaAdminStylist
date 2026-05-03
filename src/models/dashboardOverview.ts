@@ -1,10 +1,10 @@
 import type { DashboardStatsData } from '@/models/dashboardStats'
 
-/** Time ranges used by dashboard charts (toggle + mobile select). */
+/** @deprecated Legacy chart ranges; referral chart uses {@link import('@/models/adminDashboard').DashboardOverviewRange}. */
 export type DashboardChartRange = '7d' | '90d' | '180d' | '365d'
 
-/** Revenue page tabs include an extra “All time” bucket. */
-export type RevenueTimeRange = DashboardChartRange | 'all'
+/** Revenue page tabs — same four windows as {@link import('@/models/adminDashboard').DashboardOverviewRange}. */
+export type RevenueTimeRange = DashboardChartRange
 
 export type SalesDataPoint = {
   date: string
@@ -26,12 +26,10 @@ export type ReferralSourcesByRange = Record<DashboardChartRange, ReferralSourceD
  */
 export interface DashboardOverviewData {
   stats: DashboardStatsData
-  salesByRange: SalesByRange
-  /**
-   * Longer revenue series for the “All time” tab. Optional until the backend sends it.
-   */
-  salesAllTime?: SalesDataPoint[]
-  referralSourcesByRange: ReferralSourcesByRange
+  /** Revenue series from API `performance` (labelled “Sales” in the area chart). */
+  performance: SalesDataPoint[]
+  referralSources: ReferralSourceDatum[]
+  totalResponses: number
 }
 
 export interface DashboardOverviewResponse {

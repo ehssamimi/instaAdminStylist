@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Clock, FileText, Mail, Wallet } from 'lucide-react'
+import { toast } from 'sonner'
 import { BookingRatingStars } from '@/components/booking-rating-stars'
 import {
   DetailInfoCard,
@@ -17,6 +18,7 @@ import {
   TableStatusBadge,
   tableStatusLabels,
 } from '@/components/ui/table-status-badge'
+import { bookingsApi, getApiErrorMessage } from '@/lib/api'
 import { formatDurationLabel } from '@/lib/booking-format'
 import type { BookingDetailDto } from '@/models/bookings'
 
@@ -42,6 +44,15 @@ function reviewBody(text: string | null) {
   )
 }
 
+function canCancelBookingStatus(status: string) {
+  const normalizedStatus = status.trim().toLowerCase().replace(/-/g, '_')
+  return (
+    normalizedStatus === 'scheduled' ||
+    normalizedStatus === 'in_progress' ||
+    normalizedStatus === 'pending_payment'
+  )
+}
+
 export function BookingDetailsPageView({
   booking,
   backHref,
@@ -50,6 +61,52 @@ export function BookingDetailsPageView({
   errorMessage = null,
 }: BookingDetailsPageViewProps) {
   const [cancelCallDialogOpen, setCancelCallDialogOpen] = useState(false)
+  const [refundServiceFeeDialogOpen, setRefundServiceFeeDialogOpen] =
+    useState(false)
+  const [cancelledBookingIds, setCancelledBookingIds] = useState<Set<string>>(
+    () => new Set()
+  )
+  const [refundedFeeBookingIds, setRefundedFeeBookingIds] = useState<
+    Set<string>
+  >(() => new Set())
+  const canShowCancelCall =
+    booking != null &&
+    canCancelBookingStatus(booking.status) &&
+    !cancelledBookingIds.has(booking.bookingId)
+  const canShowRefundServiceFee =
+    booking != null && !refundedFeeBookingIds.has(booking.bookingId)
+
+  async function handleCancelBooking() {
+    if (!booking) return
+    try {
+      await bookingsApi.cancel(booking.bookingId)
+      setCancelledBookingIds((current) => {
+        const next = new Set(current)
+        next.add(booking.bookingId)
+        return next
+      })
+      toast.success('Booking canceled successfully.')
+    } catch (e) {
+      toast.error(getApiErrorMessage(e))
+      throw e
+    }
+  }
+
+  async function handleRefundServiceFee() {
+    if (!booking) return
+    try {
+      await bookingsApi.refundFees(booking.bookingId)
+      setRefundedFeeBookingIds((current) => {
+        const next = new Set(current)
+        next.add(booking.bookingId)
+        return next
+      })
+      toast.success('Service fee refunded successfully.')
+    } catch (e) {
+      toast.error(getApiErrorMessage(e))
+      throw e
+    }
+  }
 
   return (
     <div className="-m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
@@ -63,16 +120,24 @@ export function BookingDetailsPageView({
         </div>
         {booking ? (
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:mt-1">
-            <HeaderActionButton
-              type="button"
-              variant="neutral"
-              onClick={() => setCancelCallDialogOpen(true)}
-            >
-              Cancel Call
-            </HeaderActionButton>
-            <HeaderActionButton type="button" variant="error">
-              Refund Service Fee
-            </HeaderActionButton>
+            {canShowCancelCall ? (
+              <HeaderActionButton
+                type="button"
+                variant="neutral"
+                onClick={() => setCancelCallDialogOpen(true)}
+              >
+                Cancel Call
+              </HeaderActionButton>
+            ) : null}
+            {canShowRefundServiceFee ? (
+              <HeaderActionButton
+                type="button"
+                variant="error"
+                onClick={() => setRefundServiceFeeDialogOpen(true)}
+              >
+                Refund Service Fee
+              </HeaderActionButton>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -81,9 +146,14 @@ export function BookingDetailsPageView({
         open={cancelCallDialogOpen}
         onOpenChange={setCancelCallDialogOpen}
         description="Are you sure you want to cancel the call? The customer receives a full refund."
-        onConfirm={() => {
-          // TODO: cancel booking via API
-        }}
+        onConfirm={handleCancelBooking}
+      />
+
+      <ConfirmDialog
+        open={refundServiceFeeDialogOpen}
+        onOpenChange={setRefundServiceFeeDialogOpen}
+        description="Are you sure you want to refund the service fee for this booking?"
+        onConfirm={handleRefundServiceFee}
       />
 
       {errorMessage ? (

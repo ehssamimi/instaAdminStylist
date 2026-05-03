@@ -22,13 +22,16 @@ const SKIP_REFRESH_PATHS = new Set([
   '/auth/forgot-password',
   '/auth/verify-password-reset-otp',
   '/auth/reset-password',
+  '/auth/verify-password',
   '/auth/signup',
 ])
 
 function shouldSkipRefresh(url: string | undefined): boolean {
   if (!url) return true
   const path = url.split('?')[0] ?? ''
-  return SKIP_REFRESH_PATHS.has(path)
+  if (SKIP_REFRESH_PATHS.has(path)) return true
+  if (path.includes('/admin/auth/forgot-password')) return true
+  return false
 }
 
 /** No auth interceptors — used only for refresh to avoid recursion */
@@ -67,6 +70,8 @@ apiClient.interceptors.request.use(
       const path = config.url?.split('?')[0] ?? ''
       if (path === '/auth/refresh-token') {
         delete config.headers.Authorization
+      } else if (path === '/auth/verify-password') {
+        /** Reset-link token is sent as Bearer by `authApi.verifyPassword` — never attach session JWT. */
       } else {
         const token = localStorage.getItem('token')
         if (token) {

@@ -1,30 +1,30 @@
-"use client"
+"use client";
 
-import { Mail } from "lucide-react"
+import { Mail } from "lucide-react";
 
 export type ProfileHeaderActivityItem = {
-  label?: string
-  value?: string
-}
+  label?: string;
+  value?: string;
+};
 
 export type ProfileHeaderCardProps = {
-  imageUrl?: string | null
-  displayName: string
-  email: string
+  imageUrl?: string | null;
+  displayName: string;
+  email: string;
   /** e.g. “Stylist Name” / “Customer Name” */
-  nameFieldLabel?: string
+  nameFieldLabel?: string;
   /** e.g. “Stylist Email” / “Customer Email” */
-  emailFieldLabel?: string
+  emailFieldLabel?: string;
   /** Defaults to two “No activity yet” placeholders if omitted */
-  activities?: ProfileHeaderActivityItem[]
-}
+  activities?: ProfileHeaderActivityItem[];
+};
 
 function ActivityMetricCard({
   label = "No activity yet",
   value = "—",
 }: {
-  label?: string
-  value?: string
+  label?: string;
+  value?: string;
 }) {
   return (
     <div className="flex min-h-[112px] min-w-[140px] flex-1 flex-col rounded-xl border border-gray-100 bg-white p-3">
@@ -33,7 +33,7 @@ function ActivityMetricCard({
         {value}
       </p>
     </div>
-  )
+  );
 }
 
 export function ProfileHeaderCard({
@@ -47,20 +47,16 @@ export function ProfileHeaderCard({
   const items =
     activities && activities.length > 0
       ? activities
-      : ([{}, {}] satisfies ProfileHeaderActivityItem[])
+      : ([{}, {}] satisfies ProfileHeaderActivityItem[]);
 
   return (
-    <section className="mb-6 admin-panel-surface">
+    <section className="mb-2 admin-panel-surface">
       <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-stretch lg:justify-between">
         <div className="flex w-full shrink-0 flex-col gap-10 sm:flex-row sm:items-center lg:w-auto">
           <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-gray-100">
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl}
-                alt=""
-                className="size-full object-cover"
-              />
+              <img src={imageUrl} alt="" className="size-full object-cover" />
             ) : (
               <div className="flex size-full items-center justify-center font-satoshi text-xs text-gray-400">
                 No photo
@@ -69,11 +65,15 @@ export function ProfileHeaderCard({
           </div>
           <div className="flex min-w-0 gap-5 gap-10">
             <div>
-              <p className="mb-1 font-satoshi text-lg font-bold">{nameFieldLabel}</p>
+              <p className="mb-1 font-satoshi text-lg font-bold">
+                {nameFieldLabel}
+              </p>
               <p className="mb-1 font-normal text-gray-600">{displayName}</p>
             </div>
             <div>
-              <p className="mb-1 font-satoshi text-lg font-bold">{emailFieldLabel}</p>
+              <p className="mb-1 font-satoshi text-lg font-bold">
+                {emailFieldLabel}
+              </p>
               <div className="flex items-center gap-2">
                 <Mail className="size-4 shrink-0 text-black-40" aria-hidden />
                 <span className="mb-1 truncate font-satoshi font-normal text-gray-600">
@@ -94,5 +94,5 @@ export function ProfileHeaderCard({
         </div>
       </div>
     </section>
-  )
+  );
 }

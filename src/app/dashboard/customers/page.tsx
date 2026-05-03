@@ -1,27 +1,37 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 import { CustomersPageView } from "@/components/customers-page-view"
 import { usePageTitle } from "@/hooks/use-page-title"
-import {
-  filterCustomerRows,
-  mockCustomersSeed,
-  type CustomerRow,
-} from "@/lib/mock-customers"
+import { useAdminUsers } from "@/hooks/use-admin-users"
+import type { CustomerRow } from "@/models/customersList"
+import { getApiErrorMessage } from "@/lib/api"
 
 export default function CustomersPage() {
   const { title } = usePageTitle()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [isNavigating, setIsNavigating] = useState(false)
 
-  const filteredRows = useMemo(
-    () => filterCustomerRows(mockCustomersSeed, searchQuery),
-    [searchQuery]
-  )
+  const { data, isLoading, isError, error, refetch } = useAdminUsers({
+    page,
+    pageSize,
+    search: searchQuery,
+  })
+
+  const tableRows = data?.data ?? []
+  const totalPages = data?.meta.totalPages ?? 1
+  const totalItemCount = data?.meta.total
+
+  const handleSearch = useCallback((query: string) => {
+    setPage(1)
+    setSearchQuery(query)
+  }, [])
 
   const handleRowClick = useCallback(
     (row: CustomerRow) => {
@@ -44,10 +54,38 @@ export default function CustomersPage() {
         </div>
       )}
       <h1 className="admin-page-title mb-6">{title}</h1>
+
+      {isError && (
+        <div
+          className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          {getApiErrorMessage(error)}{" "}
+          <button
+            type="button"
+            className="ml-2 underline underline-offset-2"
+            onClick={() => void refetch()}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <CustomersPageView
-        rows={filteredRows}
-        onSearch={setSearchQuery}
+        rows={tableRows}
+        onSearch={handleSearch}
         onRowClick={handleRowClick}
+        isLoading={isLoading}
+        serverPagination
+        currentPage={page}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        totalItemCount={totalItemCount}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPage(1)
+          setPageSize(size)
+        }}
       />
     </div>
   )

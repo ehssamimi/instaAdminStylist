@@ -7,14 +7,15 @@ import { useDashboardOverview } from "@/hooks/use-dashboard-overview"
 import { usePageTitle } from "@/hooks/use-page-title"
 
 const emptyStats = {
-  newCoveragesSold: 0,
-  todaysSales: 0,
-  newClaims: 0,
+  bookingsToday: 0,
+  todaysRevenue: 0,
+  newApplications: 0,
+  reviewsToApprove: 0,
 }
 
 export default function Page() {
   const { title } = usePageTitle()
-  const { data, loading, error } = useDashboardOverview()
+  const { data, loading, error, range, setRange } = useDashboardOverview()
 
   return (
     <div className="flex flex-col gap-[10px]">
@@ -27,9 +28,13 @@ export default function Page() {
       <SectionCards stats={data?.stats ?? emptyStats} loading={loading} />
       {data ? (
         <>
-          <ChartAreaInteractive salesByRange={data.salesByRange} />
+          <ChartAreaInteractive performance={data.performance} />
           <ChartReferralSources
-            referralSourcesByRange={data.referralSourcesByRange}
+            referralSources={data.referralSources}
+            totalResponses={data.totalResponses}
+            range={range}
+            onRangeChange={setRange}
+            loading={loading}
           />
         </>
       ) : loading ? (

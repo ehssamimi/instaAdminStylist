@@ -8,11 +8,11 @@
  */
 export function normalizeBackendApiOrigin(raw: string | undefined): string {
   if (!raw?.trim()) return ''
-  let s = raw.trim().replace(/\/+$/, '')
+  const s = raw.trim().replace(/\/+$/, '')
   const forParse = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s) ? s : `http://${s}`
   try {
     const u = new URL(forParse)
-    let path = u.pathname.replace(/\/+$/, '')
+    const path = u.pathname.replace(/\/+$/, '')
     if (path === '/api') {
       u.pathname = ''
     }

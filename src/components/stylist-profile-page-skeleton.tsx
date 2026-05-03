@@ -2,7 +2,7 @@ import { EachContainer } from "@/components/each-container"
 import { Skeleton } from "@/components/ui/skeleton"
 
 /**
- * Loading placeholder for {@link StylistProfileView} — profile header, booking
+ * Loading placeholder for {@link StylistProfileScreen} — profile header, booking
  * block, and the three “Styling” panels.
  */
 export function StylistProfilePageSkeleton() {

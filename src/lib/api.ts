@@ -26,11 +26,18 @@ import {
   ConfirmExtensionPaymentRequest,
   ConfirmExtensionPaymentResponse
 } from '@/models/extensionPayment'
-import { ForgotPasswordResponse, VerifyPasswordResetOtpResponse, ResetPasswordRequest, ResetPasswordResponse } from '@/models/forgotPassword'
+import {
+  ForgotPasswordResponse,
+  VerifyPasswordResetOtpResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
+} from '@/models/forgotPassword'
 import { VerifyEmailOtpRequest, VerifyEmailOtpResponse } from '@/models/verifyEmailOtp'
 import { DashboardStatsResponse, DashboardMetricsResponse } from '@/models/dashboardStats'
-import { DashboardOverviewResponse } from '@/models/dashboardOverview'
-import type { RevenueOverviewResponse } from '@/models/revenueOverview'
+import type { DashboardOverviewRange } from '@/models/adminDashboard'
+import { normalizeAdminDashboardPayload } from '@/lib/dashboard-overview-normalize'
+import { normalizeAdminRevenuePayload } from '@/lib/revenue-api-normalize'
+import { revenueQueryParamForBackend } from '@/lib/revenue-dashboard'
 import {
   AdminBookingsListResponse,
   BookingDetailResponse,
@@ -43,6 +50,7 @@ import {
   StylistDetailResponse,
   StylistsListResponse,
 } from '@/models/stylists'
+import { normalizeAdminStylistsListResponse } from '@/lib/admin-stylists-list-normalize'
 import { DuplicatedProductsResponse } from '@/models/duplicatedProducts'
 import type { StylistApplicationsListResult } from '@/models/stylistApplication'
 import { normalizeStylistApplicationsListResponse } from '@/lib/stylist-applications-normalize'
@@ -58,6 +66,14 @@ import {
   type AdminReportsListNormalized,
 } from '@/lib/reports-normalize'
 import type { OnboardingOption } from '@/models/onboardingOptions'
+import {
+  normalizeAdminUsersListResponse,
+  type AdminUsersListNormalized,
+} from '@/models/customersList'
+import {
+  normalizeCustomerBookingsPage,
+  type CustomerBookingsPageResult,
+} from '@/models/customerBookings'
 
 // Generic API utility functions
 export const api = {
@@ -138,11 +154,19 @@ export const authApi = {
   },
 
   forgotPassword: async (email: string) => {
-    return api.post<ForgotPasswordResponse>('/auth/forgot-password', { email })
+    return api.post<ForgotPasswordResponse>('/admin/auth/forgot-password', { email })
   },
 
   resetPassword: async (data: ResetPasswordRequest) => {
     return api.post<ResetPasswordResponse>('/auth/reset-password', data)
+  },
+
+  verifyPassword: async (password: string, resetTokenFromLink: string) => {
+    const t = resetTokenFromLink.trim()
+    return api.post<ResetPasswordResponse>('/auth/reset-password', {
+      token: t,
+      password,
+    })
   },
   addPhone: async (data: { email: string; phone: string }) => {
     return api.post('/auth/add-phone', data)
@@ -164,14 +188,36 @@ export const dashboardApi = {
     return api.get('/dashboard')
   },
 
-  /** Single payload for dashboard home: stats + chart datasets (same path MSW mocks when flag on). */
-  getOverview: async () => {
-    return api.get<DashboardOverviewResponse>('/admin/dashboard')
+  /**
+   * Dashboard home — `GET /api/admin/dashboard?range=`.
+   * Normalizes live API `{ summary, performance, userAcquisition }` into UI models.
+   */
+  getOverview: async (params?: { range?: DashboardOverviewRange }) => {
+    const raw = await api.get<unknown>('/admin/dashboard', {
+      params: { range: params?.range ?? 'past_week' },
+    })
+    const normalized = normalizeAdminDashboardPayload(raw)
+    if (!normalized) {
+      throw new Error('Invalid dashboard response shape')
+    }
+    return normalized
   },
 
-  /** Revenue tab: series + optional `summaryByRange` (`GET /api/admin/revenue`). */
-  getRevenueOverview: async () => {
-    return api.get<RevenueOverviewResponse>('/admin/revenue')
+  /**
+   * Revenue tab — `GET /api/admin/revenue?range=` (same `range` as dashboard:
+   * `past_week` | `3m` | `6m` | `1y`).
+   */
+  getRevenueOverview: async (params?: { range?: DashboardOverviewRange }) => {
+    const raw = await api.get<unknown>('/admin/revenue', {
+      params: {
+        range: revenueQueryParamForBackend(params?.range ?? 'past_week'),
+      },
+    })
+    const normalized = normalizeAdminRevenuePayload(raw)
+    if (!normalized) {
+      throw new Error('Invalid revenue response shape')
+    }
+    return normalized
   },
 
   getStats: async () => {
@@ -224,6 +270,8 @@ export const bookingsApi = {
     search?: string
     dateFrom?: string
     dateTo?: string
+    /** Filters list to one stylist (`GET .../admin/bookings?...&stylistId=`). */
+    stylistId?: string
   }): Promise<BookingsListNormalized> => {
     const raw = await api.get<AdminBookingsListResponse>('/admin/bookings', {
       params: {
@@ -232,6 +280,9 @@ export const bookingsApi = {
         search: params?.search,
         dateFrom: params?.dateFrom,
         dateTo: params?.dateTo,
+        ...(params?.stylistId?.trim()
+          ? { stylistId: params.stylistId.trim() }
+          : {}),
       },
     })
     const m = raw.metadata
@@ -251,6 +302,18 @@ export const bookingsApi = {
     const raw = await api.get<unknown>(`/admin/bookings/${id}`)
     const data = normalizeBookingDetailFromApi(raw)
     return { success: data != null, data }
+  },
+  cancel: async (id: string) => {
+    return api.post<unknown>(
+      `/admin/bookings/${encodeURIComponent(id)}/cancel`,
+      {}
+    )
+  },
+  refundFees: async (id: string) => {
+    return api.post<unknown>(
+      `/admin/bookings/${encodeURIComponent(id)}/refund-fees`,
+      {}
+    )
   },
 }
 
@@ -314,8 +377,23 @@ export const reportsApi = {
 }
 
 export const stylistsApi = {
-  getList: async (params?: { page?: number; per_page?: number; search?: string }) => {
-    return api.get<StylistsListResponse>('/admin/stylists', { params })
+  /**
+   * `GET /api/admin/stylists` — proxied to backend as `?page=&limit=&search=`.
+   */
+  getList: async (params?: {
+    page?: number
+    per_page?: number
+    search?: string
+  }): Promise<StylistsListResponse> => {
+    const perPage = params?.per_page ?? 10
+    const raw = await api.get<unknown>('/admin/stylists', {
+      params: {
+        page: params?.page,
+        limit: perPage,
+        ...(params?.search?.trim() ? { search: params.search.trim() } : {}),
+      },
+    })
+    return normalizeAdminStylistsListResponse(raw, perPage)
   },
   /**
    * Admin featured list — `GET /api/admin/featured-stylists` (e.g. `?page=1&limit=10`).
@@ -367,6 +445,25 @@ export const stylistsApi = {
   getById: async (id: string): Promise<StylistDetailResponse> => {
     const raw = await api.get<unknown>(`/stylist/details/${id}`)
     return normalizeStylistDetailResponse(raw)
+  },
+
+  /** Update live stylist profile fields with multipart `PUT /api/stylist/details/:id`. */
+  updateDetails: async (id: string, data: FormData) => {
+    return api.put<unknown>(
+      `/stylist/details/${encodeURIComponent(id)}`,
+      data,
+      {
+        transformRequest: [
+          (body, headers) => {
+            if (body instanceof FormData) {
+              const h = headers as Record<string, string | undefined>
+              delete h['Content-Type']
+            }
+            return body as FormData
+          },
+        ],
+      }
+    )
   },
 }
 
@@ -466,6 +563,47 @@ export const stylistApplicationsApi = {
         },
       ],
     })
+  },
+}
+
+export type AdminUsersQueryParams = {
+  page: number
+  pageSize: number
+  search?: string
+}
+
+export type CustomerBookingsQueryParams = {
+  page: number
+  pageSize: number
+}
+
+/** `GET /api/admin/users` → backend admin users list (`page`, `limit`, `search`). */
+export const adminUsersApi = {
+  list: async (
+    params: AdminUsersQueryParams
+  ): Promise<AdminUsersListNormalized> => {
+    const raw = await api.get<unknown>('/admin/users', {
+      params: {
+        page: params.page,
+        limit: params.pageSize,
+        ...(params.search?.trim() ? { search: params.search.trim() } : {}),
+      },
+    })
+    return normalizeAdminUsersListResponse(raw)
+  },
+
+  /** `GET /api/admin/users/:userId/bookings` — profile + booking rows (`page`, `limit`). */
+  getCustomerBookings: async (
+    userId: string,
+    params: CustomerBookingsQueryParams
+  ): Promise<CustomerBookingsPageResult> => {
+    const qs = new URLSearchParams({
+      page: String(params.page),
+      limit: String(params.pageSize),
+    })
+    const path = `/admin/users/${encodeURIComponent(userId)}/bookings?${qs.toString()}`
+    const raw = await api.get<unknown>(path)
+    return normalizeCustomerBookingsPage(raw)
   },
 }
 

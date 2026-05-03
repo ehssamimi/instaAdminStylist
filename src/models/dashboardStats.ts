@@ -1,7 +1,9 @@
+/** Summary strip on `/dashboard` from `GET /admin/dashboard`. */
 export interface DashboardStatsData {
-  newCoveragesSold: number;
-  todaysSales: number;
-  newClaims: number;
+  bookingsToday: number
+  todaysRevenue: number
+  newApplications: number
+  reviewsToApprove: number
 }
 
 export interface DashboardStatsResponse {
