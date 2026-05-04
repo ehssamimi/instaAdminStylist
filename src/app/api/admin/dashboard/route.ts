@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     status: res.status,
     headers: {
       'Content-Type': res.headers.get('Content-Type') ?? 'application/json',
+      'Cache-Control': 'no-store, max-age=0',
     },
   })
 }
