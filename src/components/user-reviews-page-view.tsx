@@ -3,16 +3,17 @@
 import React, { useCallback, useMemo } from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { format, isValid, parseISO } from "date-fns"
+import { Check, X } from "lucide-react"
 
 import { DataTable } from "@/components/data-table"
 import { SearchInput } from "@/components/search-input"
 import { Button } from "@/components/ui/button"
 import { EachContainer } from "@/components/each-container"
 import {
-  userReviewRowSchema,
-  type UserReviewRow,
-  type UserReviewStatus,
-} from "@/lib/mock-user-reviews"
+  adminReviewRowSchema,
+  type AdminReviewRow,
+  type AdminReviewStatus,
+} from "@/models/adminReviews"
 import { cn } from "@/lib/utils"
 
 function formatReviewDate(value: string): string {
@@ -29,22 +30,30 @@ const approveButtonClass =
 const rejectButtonClass =
   "h-8 shrink-0 rounded-md border border-rose-300 bg-rose-50 px-3 text-xs font-medium text-rose-700 shadow-none hover:bg-rose-100/90"
 
-const TAB_DEFS: { id: UserReviewStatus; label: string }[] = [
+const TAB_DEFS: { id: AdminReviewStatus; label: string }[] = [
   { id: "pending", label: "Pending" },
   { id: "approved", label: "Approved" },
   { id: "rejected", label: "Rejected" },
 ]
 
 export type UserReviewsPageViewProps = {
-  rows: UserReviewRow[]
-  activeTab: UserReviewStatus
-  onTabChange: (tab: UserReviewStatus) => void
+  rows: AdminReviewRow[]
+  activeTab: AdminReviewStatus
+  onTabChange: (tab: AdminReviewStatus) => void
   counts: { pending: number; approved: number; rejected: number }
   onSearch: (query: string) => void
   onApprove: (id: string) => void
   onReject: (id: string) => void
   onApproveAll: () => void
   disableApproveAll?: boolean
+  disabledReviewIds?: ReadonlySet<string>
+  isLoading?: boolean
+  page?: number
+  pageSize?: number
+  totalPages?: number
+  totalItemCount?: number
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (pageSize: number) => void
 }
 
 export function UserReviewsPageView({
@@ -57,11 +66,17 @@ export function UserReviewsPageView({
   onReject,
   onApproveAll,
   disableApproveAll = false,
+  disabledReviewIds,
+  isLoading = false,
+  page = 1,
+  pageSize = 10,
+  totalPages = 1,
+  totalItemCount = 0,
+  onPageChange,
+  onPageSizeChange,
 }: UserReviewsPageViewProps) {
-  const showRowActions = activeTab === "pending"
-
-  const columns: ColumnDef<UserReviewRow>[] = useMemo(() => {
-    const cols: ColumnDef<UserReviewRow>[] = [
+  const columns: ColumnDef<AdminReviewRow>[] = useMemo(() => {
+    const cols: ColumnDef<AdminReviewRow>[] = [
       {
         accessorKey: "last_name",
         header: "Last Name",
@@ -109,38 +124,64 @@ export function UserReviewsPageView({
       },
     ]
 
-    if (showRowActions) {
-      cols.push({
-        id: "actions",
-        header: "Approve or Reject",
-        enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={approveButtonClass}
-              onClick={() => onApprove(row.original.id)}
-            >
-              Approve
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={rejectButtonClass}
-              onClick={() => onReject(row.original.id)}
-            >
-              Reject
-            </Button>
-          </div>
-        ),
-      })
-    }
+    cols.push({
+      id: "actions",
+      header: activeTab === "rejected" ? "Status" : "Approve or Reject",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const isDisabled = disabledReviewIds?.has(row.original.id) ?? false
+
+        if (activeTab === "approved") {
+          return (
+            <span className="inline-flex items-center gap-3 whitespace-nowrap text-sm font-medium text-emerald-700">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50">
+                <Check className="h-4 w-4" aria-hidden />
+              </span>
+              Approved
+            </span>
+          )
+        }
+
+        if (activeTab === "rejected") {
+          return (
+            <span className="inline-flex items-center gap-3 whitespace-nowrap text-sm font-medium text-red-600">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-50">
+                <X className="h-4 w-4" aria-hidden />
+              </span>
+              Rejected
+            </span>
+          )
+        }
+
+        return (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={approveButtonClass}
+                onClick={() => onApprove(row.original.id)}
+                disabled={isDisabled}
+              >
+                Approve
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={rejectButtonClass}
+                onClick={() => onReject(row.original.id)}
+                disabled={isDisabled}
+              >
+                Reject
+              </Button>
+            </div>
+        )
+      },
+    })
 
     return cols
-  }, [onApprove, onReject, showRowActions])
+  }, [activeTab, disabledReviewIds, onApprove, onReject])
 
   const handleSearch = useCallback(
     (q: string) => {
@@ -211,8 +252,16 @@ export function UserReviewsPageView({
       <div className="mt-4">
         <DataTable
           data={rows}
-          schema={userReviewRowSchema}
+          schema={adminReviewRowSchema}
           columns={columns as ColumnDef<unknown>[]}
+          isLoading={isLoading}
+          serverPagination
+          currentPage={page}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalItemCount={totalItemCount}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
           embedded
           headerTone="plain"
         />

@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
+import * as React from "react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 
-import { useRouter } from "next/navigation"
-import { removeToken } from "@/lib/jwt-utils"
+import { useRouter } from "next/navigation";
+import { removeToken } from "@/lib/jwt-utils";
 import {
   Sidebar,
   SidebarContent,
@@ -14,48 +14,48 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-} from "@/components/ui/sidebar"
-import { matchNavItem, navMainAdmin } from "@/config/navigation"
-import { useUser } from "@/hooks/use-user"
-import { cn } from "@/lib/utils"
-import Image from "next/image"
+import { SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
+import { matchNavItem, navMainAdmin } from "@/config/navigation";
+import { useUser } from "@/hooks/use-user";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 import { useQueryClient } from "@tanstack/react-query";
-import { LogOutIcon } from "lucide-react"
-
+import { LogOutIcon } from "lucide-react";
 
 export function AppSidebar({
   className,
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useUser();
-  const router = useRouter()
-  const [navItems, setNavItems] = React.useState<typeof navMainAdmin>([])
+  const router = useRouter();
+  const [navItems, setNavItems] = React.useState<typeof navMainAdmin>([]);
   const queryClient = useQueryClient();
   React.useEffect(() => {
-    setNavItems(navMainAdmin)
-  }, [])
+    setNavItems(navMainAdmin);
+  }, []);
 
-  console.log("User from token in AppSidebar:", user)
+  console.log("User from token in AppSidebar:", user);
 
   const normalize = (url: string) => {
-    if (!url) return "/"
-    if (url === "/") return "/"
-    const withLeading = url.startsWith("/") ? url : `/${url}`
-    return withLeading !== "/" ? withLeading.replace(/\/+$/, "") : withLeading
-  }
+    if (!url) return "/";
+    if (url === "/") return "/";
+    const withLeading = url.startsWith("/") ? url : `/${url}`;
+    return withLeading !== "/" ? withLeading.replace(/\/+$/, "") : withLeading;
+  };
 
-  const matchedNav = matchNavItem(pathname, searchParams)
-  const activeHref = matchedNav ? normalize(matchedNav.url) : undefined
+  const matchedNav = matchNavItem(pathname, searchParams);
+  const activeHref = matchedNav ? normalize(matchedNav.url) : undefined;
 
   return (
-    <Sidebar collapsible="offcanvas" {...props} className={cn("border-r", className)}>
+    <Sidebar
+      collapsible="offcanvas"
+      {...props}
+      className={cn("border-r", className)}
+    >
       <SidebarHeader>
         {/* <SidebarMenu>
           <SidebarMenuItem>
@@ -75,8 +75,8 @@ export function AppSidebar({
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
               {navItems.map((item) => {
-                const href = normalize(item.url)
-                const isActive = href === activeHref
+                const href = normalize(item.url);
+                const isActive = href === activeHref;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -91,26 +91,28 @@ export function AppSidebar({
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
+                );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <a className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+        <a
+          className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
           onClick={() => {
             try {
-              removeToken()
+              removeToken();
               // invalidate all queryies
-              queryClient.invalidateQueries()
-            } catch { }
-            router.push("/admin-login")
-          }}>
-       <LogOutIcon className="size-4 ml-2" />
+              queryClient.invalidateQueries();
+            } catch {}
+            router.push("/admin-login");
+          }}
+        >
+          <LogOutIcon className="size-4 ml-2 flex" />
           <span>Log out</span>
         </a>
       </SidebarFooter>
-    </Sidebar >
-  )
+    </Sidebar>
+  );
 }

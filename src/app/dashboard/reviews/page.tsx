@@ -1,85 +1,168 @@
 "use client"
 
-import React, { useCallback, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { UserReviewsPageView } from "@/components/user-reviews-page-view"
-import { usePageTitle } from "@/hooks/use-page-title"
 import {
-  countReviewsByStatus,
-  filterUserReviewRows,
-  mockUserReviewsSeed,
-  type UserReviewStatus,
-} from "@/lib/mock-user-reviews"
+  useAdminReviewCounts,
+  useAdminReviews,
+} from "@/hooks/use-admin-reviews"
+import { usePageTitle } from "@/hooks/use-page-title"
+import { adminReviewsApi, getApiErrorMessage } from "@/lib/api"
+import type { AdminReviewStatus } from "@/models/adminReviews"
 
 export default function ReviewsPage() {
   const { title } = usePageTitle()
-  const [rows, setRows] = useState(() => [...mockUserReviewsSeed])
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState<UserReviewStatus>("pending")
-
-  const searchedRows = useMemo(
-    () => filterUserReviewRows(rows, searchQuery),
-    [rows, searchQuery]
+  const [activeTab, setActiveTab] = useState<AdminReviewStatus>("pending")
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [disabledReviewIds, setDisabledReviewIds] = useState<Set<string>>(
+    () => new Set()
   )
 
-  const filteredRows = useMemo(
-    () => searchedRows.filter((r) => r.status === activeTab),
-    [searchedRows, activeTab]
-  )
+  const {
+    data: reviews,
+    isLoading,
+    error,
+  } = useAdminReviews({
+    status: activeTab,
+    page,
+    pageSize,
+    ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+  })
 
-  const counts = useMemo(() => countReviewsByStatus(rows), [rows])
+  const { counts, error: countsError } = useAdminReviewCounts(searchQuery)
 
-  const pendingMatchCount = useMemo(
-    () => searchedRows.filter((r) => r.status === "pending").length,
-    [searchedRows]
-  )
+  const rows = useMemo(() => reviews?.data ?? [], [reviews?.data])
+  const meta = reviews?.meta ?? {
+    page,
+    pageSize,
+    total: 0,
+    totalPages: 1,
+  }
 
-  const handleApprove = useCallback((id: string) => {
-    setRows((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "approved" as const } : r))
-    )
-    toast.success("Review approved")
+  const invalidateReviews = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["admin-reviews"] })
+  }, [queryClient])
+
+  const approveMutation = useMutation({
+    mutationFn: (reviewId: string) => adminReviewsApi.approve(reviewId),
+    onMutate: (reviewId) => {
+      setDisabledReviewIds((prev) => new Set(prev).add(reviewId))
+    },
+    onSuccess: async () => {
+      toast.success("Review approved")
+      await invalidateReviews()
+    },
+    onError: (e) => {
+      toast.error(getApiErrorMessage(e))
+    },
+    onSettled: (_data, _error, reviewId) => {
+      setDisabledReviewIds((prev) => {
+        const next = new Set(prev)
+        next.delete(reviewId)
+        return next
+      })
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: (reviewId: string) => adminReviewsApi.reject(reviewId),
+    onMutate: (reviewId) => {
+      setDisabledReviewIds((prev) => new Set(prev).add(reviewId))
+    },
+    onSuccess: async () => {
+      toast.success("Review rejected")
+      await invalidateReviews()
+    },
+    onError: (e) => {
+      toast.error(getApiErrorMessage(e))
+    },
+    onSettled: (_data, _error, reviewId) => {
+      setDisabledReviewIds((prev) => {
+        const next = new Set(prev)
+        next.delete(reviewId)
+        return next
+      })
+    },
+  })
+
+  useEffect(() => {
+    setPage(1)
+  }, [activeTab])
+
+  const handleSearch = useCallback((query: string) => {
+    setPage(1)
+    setSearchQuery(query)
   }, [])
 
-  const handleReject = useCallback((id: string) => {
-    setRows((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "rejected" as const } : r))
-    )
-    toast.success("Review rejected")
-  }, [])
+  const handleApprove = useCallback(
+    (id: string) => {
+      approveMutation.mutate(id)
+    },
+    [approveMutation]
+  )
+
+  const handleReject = useCallback(
+    (id: string) => {
+      rejectMutation.mutate(id)
+    },
+    [rejectMutation]
+  )
 
   const handleApproveAll = useCallback(() => {
-    const pendingIds = searchedRows
-      .filter((r) => r.status === "pending")
-      .map((r) => r.id)
-    if (pendingIds.length === 0) return
-    const idSet = new Set(pendingIds)
-    setRows((prev) =>
-      prev.map((r) =>
-        idSet.has(r.id) ? { ...r, status: "approved" as const } : r
-      )
-    )
-    toast.success(
-      pendingIds.length === 1
-        ? "Review approved"
-        : `${pendingIds.length} reviews approved`
-    )
-  }, [searchedRows])
+    const pendingRows = rows.filter((row) => row.status === "pending")
+    if (pendingRows.length === 0 || approveMutation.isPending) return
+    pendingRows.forEach((row) => approveMutation.mutate(row.id))
+  }, [approveMutation, rows])
 
   return (
     <div className="relative -m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
       <h1 className="admin-page-title mb-6">{title}</h1>
+
+      {error ? (
+        <p className="mb-4 text-sm text-destructive" role="alert">
+          {error instanceof Error
+            ? error.message
+            : "Unable to load reviews."}
+        </p>
+      ) : null}
+
+      {countsError ? (
+        <p className="mb-4 text-sm text-destructive" role="alert">
+          Unable to load review counts.
+        </p>
+      ) : null}
+
       <UserReviewsPageView
-        rows={filteredRows}
+        rows={rows}
         activeTab={activeTab}
         counts={counts}
         onTabChange={setActiveTab}
-        onSearch={setSearchQuery}
+        onSearch={handleSearch}
         onApprove={handleApprove}
         onReject={handleReject}
         onApproveAll={handleApproveAll}
-        disableApproveAll={activeTab !== "pending" || pendingMatchCount === 0}
+        disableApproveAll={
+          activeTab !== "pending" ||
+          meta.total === 0 ||
+          disabledReviewIds.size > 0
+        }
+        disabledReviewIds={disabledReviewIds}
+        isLoading={isLoading}
+        page={meta.page}
+        pageSize={meta.pageSize}
+        totalPages={meta.totalPages}
+        totalItemCount={meta.total}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPage(1)
+          setPageSize(size)
+        }}
       />
     </div>
   )

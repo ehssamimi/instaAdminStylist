@@ -74,6 +74,13 @@ import {
   normalizeCustomerBookingsPage,
   type CustomerBookingsPageResult,
 } from '@/models/customerBookings'
+import {
+  normalizeAdminReviewsListResponse,
+} from '@/lib/admin-reviews-normalize'
+import type {
+  AdminReviewsListNormalized,
+  AdminReviewStatus,
+} from '@/models/adminReviews'
 
 // Generic API utility functions
 export const api = {
@@ -575,6 +582,44 @@ export type AdminUsersQueryParams = {
 export type CustomerBookingsQueryParams = {
   page: number
   pageSize: number
+}
+
+export type AdminReviewsQueryParams = {
+  status: AdminReviewStatus
+  page: number
+  pageSize: number
+  search?: string
+}
+
+/** `GET /api/admin/reviews` -> backend admin reviews list (`status`, `page`, `pageSize`, `search`). */
+export const adminReviewsApi = {
+  list: async (
+    params: AdminReviewsQueryParams
+  ): Promise<AdminReviewsListNormalized> => {
+    const raw = await api.get<unknown>('/admin/reviews', {
+      params: {
+        status: params.status,
+        page: params.page,
+        pageSize: params.pageSize,
+        ...(params.search?.trim() ? { search: params.search.trim() } : {}),
+      },
+    })
+    return normalizeAdminReviewsListResponse(raw)
+  },
+
+  approve: async (reviewId: string) => {
+    return api.post<unknown>(
+      `/admin/reviews/${encodeURIComponent(reviewId)}/approve`,
+      {}
+    )
+  },
+
+  reject: async (reviewId: string) => {
+    return api.post<unknown>(
+      `/admin/reviews/${encodeURIComponent(reviewId)}/reject`,
+      {}
+    )
+  },
 }
 
 /** `GET /api/admin/users` → backend admin users list (`page`, `limit`, `search`). */

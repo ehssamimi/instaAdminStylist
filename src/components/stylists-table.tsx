@@ -1,25 +1,25 @@
-'use client'
+"use client";
 
-import { useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import { z } from 'zod'
-import { ColumnDef } from '@tanstack/react-table'
-import { FileText } from 'lucide-react'
+import { useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { ColumnDef } from "@tanstack/react-table";
+import { FileText } from "lucide-react";
 
-import { DataTable } from '@/components/data-table'
-import { SearchInput } from '@/components/search-input'
-import { Button } from '@/components/ui/button'
-import { useStylists } from '@/hooks/use-stylists'
-import type { StylistRowDto } from '@/models/stylists'
-import { EachContainer } from './each-container'
+import { DataTable } from "@/components/data-table";
+import { SearchInput } from "@/components/search-input";
+import { Button } from "@/components/ui/button";
+import { useStylists } from "@/hooks/use-stylists";
+import type { StylistRowDto } from "@/models/stylists";
+import { EachContainer } from "./each-container";
 
 function stylistAvatarInitials(first: string, last: string): string {
-  const f = first.trim().charAt(0).toUpperCase()
-  const l = last.trim().charAt(0).toUpperCase()
-  if (f && l) return `${f}${l}`
-  if (f) return f
-  if (l) return l
-  return '—'
+  const f = first.trim().charAt(0).toUpperCase();
+  const l = last.trim().charAt(0).toUpperCase();
+  if (f && l) return `${f}${l}`;
+  if (f) return f;
+  if (l) return l;
+  return "—";
 }
 
 const stylistSchema = z.object({
@@ -33,10 +33,10 @@ const stylistSchema = z.object({
   stylist_since: z.string(),
   avg_weekly_availability: z.string(),
   avg_weekly_drop_in: z.string(),
-})
+});
 
 export function StylistsTable() {
-  const router = useRouter()
+  const router = useRouter();
 
   const {
     data,
@@ -47,32 +47,32 @@ export function StylistsTable() {
     setPage,
     setPerPage,
     setSearch,
-  } = useStylists()
+  } = useStylists();
 
   const handleSearch = useCallback(
     (query: string) => {
-      setPage(1)
-      setSearch(query)
+      setPage(1);
+      setSearch(query);
     },
     [setPage, setSearch]
-  )
+  );
 
   const handleRowClick = useCallback(
     (row: unknown) => {
-      const stylist = row as StylistRowDto
-      router.push(`/dashboard/stylist/${stylist.id}`)
+      const stylist = row as StylistRowDto;
+      router.push(`/dashboard/stylist/${stylist.id}`);
     },
     [router]
-  )
+  );
 
   const columns: ColumnDef<StylistRowDto>[] = useMemo(
     () => [
       {
-        accessorKey: 'profile_picture',
-        header: 'Profile Picture',
+        accessorKey: "profile_picture",
+        header: "Profile Picture",
         enableSorting: false,
         cell: ({ row }) => {
-          const url = row.original.profile_picture?.trim()
+          const url = row.original.profile_picture?.trim();
           return (
             <div className="relative h-14 w-14 overflow-hidden rounded-md bg-gray-100">
               {url ? (
@@ -94,31 +94,48 @@ export function StylistsTable() {
                 </span>
               )}
             </div>
-          )
+          );
         },
       },
-      { accessorKey: 'last_name', header: 'Last Name', enableSorting: false },
-      { accessorKey: 'first_name', header: 'First Name', enableSorting: false },
-      { accessorKey: 'speciality', header: 'Speciality', enableSorting: false },
-      { accessorKey: 'bookings', header: 'Bookings', enableSorting: false },
-      { accessorKey: 'total_revenue', header: 'Total Sales', enableSorting: false },
-      { accessorKey: 'stylist_since', header: 'Stylists Since', enableSorting: false },
+      { accessorKey: "last_name", header: "Last Name", enableSorting: false },
+      { accessorKey: "first_name", header: "First Name", enableSorting: false },
       {
-        accessorKey: 'avg_weekly_availability',
-        header: 'Avg. Weekly Avail.',
+        accessorKey: "speciality",
+        header: "Speciality",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="block w-[12rem] max-w-[12rem] whitespace-normal break-normal leading-snug">
+            {row.original.speciality}
+          </span>
+        ),
+      },
+      { accessorKey: "bookings", header: "Bookings", enableSorting: false },
+      {
+        accessorKey: "total_revenue",
+        header: "Total Sales",
         enableSorting: false,
       },
       {
-        accessorKey: 'avg_weekly_drop_in',
-        header: 'Avg. Weekly Drop-in',
+        accessorKey: "stylist_since",
+        header: "Stylists Since",
+        enableSorting: false,
+      },
+      {
+        accessorKey: "avg_weekly_availability",
+        header: "Avg. Weekly Avail.",
+        enableSorting: false,
+      },
+      {
+        accessorKey: "avg_weekly_drop_in",
+        header: "Avg. Weekly Drop-in",
         enableSorting: false,
       },
     ],
     []
-  )
+  );
 
   return (
-    <EachContainer  >
+    <EachContainer>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full flex-1 items-center gap-3">
           <SearchInput
@@ -154,12 +171,12 @@ export function StylistsTable() {
             totalPages={totalPages}
             onPageChange={setPage}
             onPageSizeChange={(size) => {
-              setPage(1)
-              setPerPage(size)
+              setPage(1);
+              setPerPage(size);
             }}
           />
         )}
       </div>
     </EachContainer>
-  )
+  );
 }

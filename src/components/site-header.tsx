@@ -1,26 +1,26 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Bell, Loader2 } from "lucide-react"
-import { usePathname, useSearchParams } from "next/navigation"
-import { useIsSuperAdmin } from "@/hooks/use-is-super-admin"
-import { formatDistanceToNow } from "date-fns"
-import { useSelectedSchool } from "@/contexts/selected-school-context"
+} from "@/components/ui/popover";
+import { Bell, Loader2 } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useIsSuperAdmin } from "@/hooks/use-is-super-admin";
+import { formatDistanceToNow } from "date-fns";
+import { useSelectedSchool } from "@/contexts/selected-school-context";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -28,31 +28,38 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import Link from "next/link"
-import Image from "next/image"
-import { getHeaderBreadcrumbs } from "@/config/breadcrumbs"
-
+} from "@/components/ui/breadcrumb";
+import Link from "next/link";
+import Image from "next/image";
+import { getHeaderBreadcrumbs } from "@/config/breadcrumbs";
 
 export function SiteHeader() {
-  const { selectedSchoolUrl, setSelectedSchoolUrl } = useSelectedSchool()
-  const isSuperAdmin = useIsSuperAdmin()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const headerBreadcrumbs = getHeaderBreadcrumbs(pathname, searchParams)
+  const { selectedSchoolUrl, setSelectedSchoolUrl } = useSelectedSchool();
+  const isSuperAdmin = useIsSuperAdmin();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const headerBreadcrumbs = getHeaderBreadcrumbs(pathname, searchParams);
 
   // Type assertion since the API returns ProductResponse but school districts have different structure
 
   const formatDate = (dateString: string) => {
-    return formatDistanceToNow(new Date(dateString), { addSuffix: true })
-  }
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex h-16 w-full shrink-0 items-center gap-2   bg-card transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:pr-10 lg:pl-2">
-      <div className="">
-          <Link href="/" className='flex justify-start items-center w-[calc(var(--sidebar-width))]'>
-            <Image src="/logo.svg" alt="Insta Styling" width={180} height={32} />
+        <div className="">
+          <Link
+            href="/"
+            className="flex justify-start items-center w-[calc(var(--sidebar-width))]"
+          >
+            <Image
+              src="/logo.svg"
+              alt="Insta Styling"
+              width={180}
+              height={32}
+            />
           </Link>
         </div>
         {/* <SidebarTrigger className="-ml-1" />
@@ -92,9 +99,11 @@ export function SiteHeader() {
           </div>
         )}
 
-        <h1 className="text-lg font-semibold text-neutral-black_03 ml-auto">Admin</h1>
-
+        <h1 className="text-lg font-semibold text-neutral-black_03 ml-auto flex items-center">
+          Admin
+          <span className="text-xs text-gray-300 ml-1">(v-0.0.1)</span>
+        </h1>
       </div>
     </header>
-  )
+  );
 }
