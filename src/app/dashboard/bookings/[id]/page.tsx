@@ -10,4 +10,5 @@ const BookingDetailsContent = dynamic(() => import('./_content'), {
 export default function BookingDetailsPage() {
   return <BookingDetailsContent />
 }
+
 export const runtime = 'edge'

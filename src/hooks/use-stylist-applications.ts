@@ -3,7 +3,6 @@ import {
   stylistApplicationsApi,
   type StylistApplicationsQueryParams,
 } from "@/lib/api"
-import { getMockStylistApplicationsPage } from "@/lib/mock-stylist-applications"
 
 export function stylistApplicationsQueryKey(
   params: StylistApplicationsQueryParams
@@ -21,13 +20,7 @@ export function stylistApplicationsQueryKey(
 export function useStylistApplications(params: StylistApplicationsQueryParams) {
   return useQuery({
     queryKey: stylistApplicationsQueryKey(params),
-    queryFn: async () => {
-      try {
-        return await stylistApplicationsApi.getPendingList(params)
-      } catch {
-        return getMockStylistApplicationsPage(params)
-      }
-    },
+    queryFn: () => stylistApplicationsApi.getPendingList(params),
     staleTime: 60000,
     gcTime: 300000,
   })

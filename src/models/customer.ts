@@ -1,6 +1,6 @@
 import type { BookingRowDto } from '@/models/bookings'
 
-/** Admin customer profile (mock or API). */
+/** Admin customer profile. */
 export interface CustomerDetailDto {
   id: string
   name: string

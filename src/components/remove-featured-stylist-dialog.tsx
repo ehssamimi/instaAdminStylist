@@ -16,7 +16,7 @@ import { HeaderActionButton } from "./header-action-button"
 type RemoveFeaturedStylistDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Full display name, e.g. "Jane Smith" */
+  /** Full display name shown in the confirmation copy. */
   stylistName: string
   onConfirm: () => void | Promise<void>
 }

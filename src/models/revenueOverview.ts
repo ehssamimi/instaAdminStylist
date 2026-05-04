@@ -8,14 +8,12 @@ export type RevenueRangeModel = {
   avgRevenue: number
 }
 
-/** Optional per-tab headline numbers (legacy mock shape only). */
+/** Optional per-tab headline numbers for legacy revenue payloads. */
 export type RevenueSummaryByRange = Partial<
   Record<RevenueTimeRange, { totalRevenue: number; bookings: number }>
 >
 
-/**
- * Legacy bundled mock shape for offline `GET /api/admin/revenue` (no longer used when API URL is set).
- */
+/** Legacy revenue overview payload shape retained for compatibility. */
 export interface RevenueOverviewData {
   salesByRange: SalesByRange
   salesAllTime?: SalesDataPoint[]

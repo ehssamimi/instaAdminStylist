@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { getMockStylistApplicationsPage } from "@/lib/mock-stylist-applications"
 import { getApiErrorMessage, stylistApplicationsApi, stylistsApi } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import type { StylistApplicationListItem } from "@/models/stylistApplication"
@@ -122,17 +121,12 @@ export function AddFeaturedStylistModal({
     enabled: open && suggestionsOpen,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
-      const params = {
+      return stylistApplicationsApi.getPendingList({
         status: "approved" as const,
         page: pageParam,
         pageSize: APPROVED_PAGE_SIZE,
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
-      }
-      try {
-        return await stylistApplicationsApi.getPendingList(params)
-      } catch {
-        return getMockStylistApplicationsPage(params)
-      }
+      })
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.meta.page < lastPage.meta.totalPages) {

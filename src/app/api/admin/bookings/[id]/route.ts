@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server'
 import { backendApiBaseFromEnv } from '@/lib/backend-api-url'
 
-/**
- * Proxies GET /api/admin/bookings/:id to the configured backend.
- * `getMockBookingDetail` in `@/lib/mock-bookings` remains for offline stylist UI only.
- */
+/** Proxies GET /api/admin/bookings/:id to the configured backend. */
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }

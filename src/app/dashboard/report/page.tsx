@@ -16,7 +16,7 @@ import { getApiErrorMessage, reportsApi } from "@/lib/api"
 import {
   reportRowSchema,
   type ReportRow,
-} from "@/lib/mock-reports"
+} from "@/models/reports"
 import type { ReportStatus } from "@/models/reports"
 import { cn } from "@/lib/utils"
 

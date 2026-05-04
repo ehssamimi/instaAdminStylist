@@ -16,4 +16,5 @@ const ApplicationDetailContent = dynamic(() => import('./_content'), {
 export default function StylistProfilePage() {
   return <ApplicationDetailContent />
 }
+
 export const runtime = 'edge'

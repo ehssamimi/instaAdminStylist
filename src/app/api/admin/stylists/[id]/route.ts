@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { adminRouteUsesMock } from '@/lib/admin-route-mock'
 import { backendApiBaseFromEnv } from '@/lib/backend-api-url'
 
 export async function GET(
@@ -7,17 +6,6 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params
-  const useLive = process.env.NEXT_PUBLIC_STYLISTS_USE_LIVE_API === 'true'
-
-  if (adminRouteUsesMock(useLive)) {
-    const { getMockStylistDetail } = await import('@/mocks/data/stylists')
-    const detail = getMockStylistDetail(id)
-    return NextResponse.json(
-      { success: Boolean(detail), data: detail },
-      { status: detail ? 200 : 404 }
-    )
-  }
-
   const apiBase = backendApiBaseFromEnv()
   if (!apiBase) {
     return NextResponse.json(
@@ -26,13 +14,17 @@ export async function GET(
     )
   }
 
-  const upstream = await fetch(
-    `${apiBase}/stylist/details/${id}`,
-    {
-      headers: { cookie: request.headers.get('cookie') ?? '' },
-    }
-  )
-  const json = await upstream.json()
-  return NextResponse.json(json, { status: upstream.status })
+  const upstream = await fetch(`${apiBase}/stylist/details/${id}`, {
+    headers: { cookie: request.headers.get('cookie') ?? '' },
+    cache: 'no-store',
+  })
+  const body = await upstream.text()
+  return new NextResponse(body, {
+    status: upstream.status,
+    headers: {
+      'Content-Type': upstream.headers.get('Content-Type') ?? 'application/json',
+    },
+  })
 }
+
 export const runtime = 'edge'

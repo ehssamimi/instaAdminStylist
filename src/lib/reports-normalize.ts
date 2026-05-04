@@ -1,6 +1,6 @@
-import type { ReportRow } from '@/lib/mock-reports'
 import type {
   AdminReportDetail,
+  ReportRow,
   ReportStatus,
   ReportUserType,
 } from '@/models/reports'

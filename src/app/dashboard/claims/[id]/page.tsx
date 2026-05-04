@@ -10,4 +10,5 @@ const ClaimDetailsContent = dynamic(() => import('./_content'), {
 export default function ClaimDetailsPage() {
   return <ClaimDetailsContent />
 }
+
 export const runtime = 'edge'

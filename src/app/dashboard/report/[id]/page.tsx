@@ -10,4 +10,5 @@ const ReportDetailContent = dynamic(() => import('./_content'), {
 export default function ReportDetailPage() {
   return <ReportDetailContent />
 }
+
 export const runtime = 'edge'

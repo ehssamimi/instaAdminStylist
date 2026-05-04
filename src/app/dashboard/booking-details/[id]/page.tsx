@@ -10,4 +10,5 @@ const BookingDetailsStandaloneContent = dynamic(() => import('./_content'), {
 export default function BookingDetailsStandalonePage() {
   return <BookingDetailsStandaloneContent />
 }
+
 export const runtime = 'edge'

@@ -1,3 +1,5 @@
+import { z } from "zod"
+
 /**
  * Admin reports list — aligns with `GET /api/admin/reports`
  * (e.g. `?status=OPEN&status=IGNORED&search=&page=1&pageSize=10`).
@@ -71,3 +73,15 @@ export interface AdminReportDetail extends AdminReportListItem {
   sourceType?: string
   sourceId?: string
 }
+
+export const reportRowSchema = z.object({
+  id: z.string(),
+  reported_user: z.string(),
+  user_type: z.enum(["Stylist", "Customer"]),
+  reasoning: z.string(),
+  report_date: z.string(),
+  reported_by: z.string(),
+  status: z.enum(["OPEN", "REMOVED_USER", "IGNORED"]),
+})
+
+export type ReportRow = z.infer<typeof reportRowSchema>

@@ -60,20 +60,6 @@ export function ChartAreaInteractive({ performance }: ChartAreaInteractiveProps)
     return { yMax: yMaxRounded, ticks: tickList }
   }, [chartData])
 
-  /*
-   * Previous mock-only range toggle (7d / 90d / 180d / 365d) lived here.
-   * Live dashboard API returns one `performance` series per request; only the
-   * referral chart exposes `range` — keep markup commented per product request.
-   *
-   * <CardAction>
-   *   <ToggleGroup type="single" value={timeRange} ...>
-   *     <ToggleGroupItem value="7d">Past Week</ToggleGroupItem>
-   *     ...
-   *   </ToggleGroup>
-   *   <Select value={timeRange} ...>...</Select>
-   * </CardAction>
-   */
-
   return (
     <Card className="@container/card shadow-none ">
       <CardHeader>

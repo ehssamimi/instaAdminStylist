@@ -10,4 +10,5 @@ const StylistDetailsContent = dynamic(() => import('./_content'), {
 export default function StylistDetailsPage() {
   return <StylistDetailsContent />
 }
+
 export const runtime = 'edge'

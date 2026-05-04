@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 
 import { reportsApi } from "@/lib/api"
-import type { ReportRow } from "@/lib/mock-reports"
-import type { ReportStatus } from "@/models/reports"
+import type { ReportRow, ReportStatus } from "@/models/reports"
 
 export function useReportsOverview(status: ReportStatus) {
   const [data, setData] = useState<ReportRow[]>([])
