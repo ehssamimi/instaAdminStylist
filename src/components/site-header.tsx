@@ -101,7 +101,7 @@ export function SiteHeader() {
 
         <h1 className="text-lg font-semibold text-neutral-black_03 ml-auto flex items-center">
           Admin
-          <span className="text-xs text-gray-300 ml-1">(v-0.0.1)</span>
+          <span className="text-xs text-gray-300 ml-1">(v-0.0.2)</span>
         </h1>
       </div>
     </header>

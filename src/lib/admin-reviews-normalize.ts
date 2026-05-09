@@ -58,12 +58,24 @@ export function normalizeAdminReviewListItem(
   }
 }
 
+function extractStatusCounts(
+  root: Record<string, unknown>
+): Record<AdminReviewStatus, number> {
+  const sc = asRecord(root.statusCounts)
+  return {
+    pending: num(sc?.pending, 0),
+    approved: num(sc?.approved, 0),
+    rejected: num(sc?.rejected, 0),
+  }
+}
+
 export function normalizeAdminReviewsListResponse(
   raw: unknown
 ): AdminReviewsListNormalized {
   const fallback: AdminReviewsListNormalized = {
     data: [],
     meta: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
+    statusCounts: { pending: 0, approved: 0, rejected: 0 },
   }
 
   if (Array.isArray(raw)) {
@@ -74,6 +86,7 @@ export function normalizeAdminReviewsListResponse(
     return {
       data,
       meta: { page: 1, pageSize: n || 10, total: n, totalPages: 1 },
+      statusCounts: { pending: 0, approved: 0, rejected: 0 },
     }
   }
 
@@ -86,6 +99,8 @@ export function normalizeAdminReviewsListResponse(
         .map(normalizeAdminReviewListItem)
         .filter((r): r is AdminReviewRow => r != null)
     : []
+
+  const statusCounts = extractStatusCounts(root)
 
   const paging =
     asRecord(root.pagination) ?? asRecord(root.metadata) ?? asRecord(root.meta)
@@ -104,6 +119,7 @@ export function normalizeAdminReviewsListResponse(
           num(paging.totalPages, Math.ceil(total / Math.max(1, pageSize)))
         ),
       },
+      statusCounts,
     }
   }
 
@@ -120,6 +136,7 @@ export function normalizeAdminReviewsListResponse(
         num(root.totalPages, Math.ceil(total / Math.max(1, pageSize)))
       ),
     },
+    statusCounts,
   }
 }
 

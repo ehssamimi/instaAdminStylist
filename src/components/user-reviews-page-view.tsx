@@ -98,7 +98,7 @@ export function UserReviewsPageView({
         header: "Review",
         enableSorting: false,
         cell: ({ row }) => (
-          <span className="block max-w-[min(28rem,50vw)] whitespace-normal text-gray-700">
+          <span className="block min-w-[12rem] max-w-[min(28rem,50vw)] whitespace-normal text-gray-700">
             {row.original.review}
           </span>
         ),

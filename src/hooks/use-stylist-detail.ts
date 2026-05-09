@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { stylistsApi } from '@/lib/api'
 import type { StylistDetailDto } from '@/models/stylists'
 
@@ -8,6 +8,7 @@ export function useStylistDetail(id: string) {
   const [data, setData] = useState<StylistDetailDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [fetchCount, setFetchCount] = useState(0)
 
   useEffect(() => {
     if (!id) {
@@ -39,7 +40,9 @@ export function useStylistDetail(id: string) {
     return () => {
       cancelled = true
     }
-  }, [id])
+  }, [id, fetchCount])
 
-  return { data, loading, error }
+  const refetch = useCallback(() => setFetchCount((n) => n + 1), [])
+
+  return { data, loading, error, refetch }
 }

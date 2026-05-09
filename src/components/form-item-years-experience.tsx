@@ -25,6 +25,7 @@ import {
   STYLIST_YEARS_EXPERIENCE_OPTIONS,
   experienceToYearsSelectValue,
 } from "@/lib/stylist-years-experience-options"
+import type { SimpleOption } from "@/hooks/use-onboarding-flow"
 
 const itemClass = cn(
   "relative my-0.5 flex min-h-[46px] cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-3 text-center font-satoshi text-sm font-semibold text-gray-700 outline-none select-none",
@@ -45,6 +46,7 @@ export type FormItemYearsExperienceProps<T extends FieldValues> = {
   label?: string
   disabled?: boolean
   placeholder?: string
+  options?: SimpleOption[]
 }
 
 export function FormItemYearsExperience<T extends FieldValues>({
@@ -53,14 +55,20 @@ export function FormItemYearsExperience<T extends FieldValues>({
   label = "Years of Experience",
   disabled = false,
   placeholder = "Select years of experience",
+  options,
 }: FormItemYearsExperienceProps<T>) {
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => {
-        const normalized = experienceToYearsSelectValue(field.value)
-        const selectValue = normalized || undefined
+        const selectValue = options
+          ? (field.value as string) || undefined
+          : experienceToYearsSelectValue(field.value) || undefined
+
+        const items = options
+          ? options.map((o) => ({ value: o.value, label: o.label }))
+          : STYLIST_YEARS_EXPERIENCE_OPTIONS.map((o) => ({ value: o, label: o }))
 
         return (
           <FormItem className="gap-1.5">
@@ -78,9 +86,9 @@ export function FormItemYearsExperience<T extends FieldValues>({
                 </SelectTrigger>
               </FormControl>
               <SelectContent className="rounded-lg border-gray-200 bg-white p-2 shadow-lg">
-                {STYLIST_YEARS_EXPERIENCE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt} className={itemClass}>
-                    {opt}
+                {items.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value} className={itemClass}>
+                    {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>

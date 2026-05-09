@@ -18,14 +18,9 @@ import { StylistProfileHeaderCard } from "@/components/stylist-profile-header-ca
 import { StylistProfilePageSkeleton } from "@/components/stylist-profile-page-skeleton";
 import { Form, FormField } from "@/components/ui/form";
 import { useStylistApproveReject } from "@/hooks/use-stylist-approve-reject";
-import {
-  STYLIST_ONBOARDING_SCREEN,
-  STYLIST_ONBOARDING_USER_TYPE,
-  useOnboardingOptions,
-} from "@/hooks/use-onboarding-options";
+import { useOnboardingFlow, type SimpleOption } from "@/hooks/use-onboarding-flow";
 import { cn } from "@/lib/utils";
 import { getApiErrorMessage, stylistsApi } from "@/lib/api";
-import { experienceToYearsSelectValue } from "@/lib/stylist-years-experience-options";
 import type { OnboardingOption } from "@/models/onboardingOptions";
 import type { BookingRowDto } from "@/models/bookings";
 import {
@@ -61,8 +56,7 @@ const STYLING_INFO_DEFAULTS: StylingInfoFormValues = {
 };
 
 function show(v: string | null | undefined): string {
-  const s = v?.trim();
-  return s ? s : "—";
+  return v?.trim() ?? "";
 }
 
 function displayNameFromDetail(stylist: StylistDetailDto): string {
@@ -208,6 +202,20 @@ function appendIfValue(fd: FormData, key: string, value: string | undefined) {
   }
 }
 
+function appendPhone(fd: FormData, raw: string | undefined) {
+  const t = raw?.trim() ?? ""
+  if (!t || isEmptyDisplayValue(t)) return
+  if (t.startsWith("+")) {
+    const m = t.match(/^(\+\d{1,3})[\s\-]?(.+)$/)
+    if (m) {
+      fd.append("countryCode", m[1])
+      fd.append("phoneNumber", m[2].trim())
+      return
+    }
+  }
+  fd.append("phoneNumber", t)
+}
+
 function buildStylistUpdateFormData(
   values: StylingInfoFormValues,
   specialityRows: OnboardingOption[],
@@ -216,6 +224,8 @@ function buildStylistUpdateFormData(
   const fd = new FormData();
 
   appendIfValue(fd, "fullName", values.fullName);
+  appendIfValue(fd, "email", values.email);
+  appendPhone(fd, values.phone);
   appendIfValue(fd, "gender", values.gender);
   appendIfValue(fd, "businessName", values.businessName);
   appendIfValue(fd, "location", values.location);
@@ -275,10 +285,24 @@ function parseSpecialitySelections(
   };
 }
 
+function resolveExperienceOptionId(
+  raw: string | null | undefined,
+  opts: SimpleOption[]
+): string {
+  const t = raw?.trim() ?? "";
+  if (!t) return "";
+  // Direct match by id (UUID from API)
+  if (opts.some((o) => o.value === t)) return t;
+  // Fallback: match by label (old label-based data)
+  const lower = t.toLowerCase();
+  return opts.find((o) => o.label.toLowerCase() === lower)?.value ?? "";
+}
+
 function buildStylingInfoValues(
   stylist: StylistDetailDto,
   specialityRows: OnboardingOption[],
-  shopRows: OnboardingOption[]
+  shopRows: OnboardingOption[],
+  experienceOpts: SimpleOption[]
 ): StylingInfoFormValues {
   const sp = parseSpecialitySelections(
     specialityRows,
@@ -294,13 +318,13 @@ function buildStylingInfoValues(
     fullName: displayNameFromDetail(stylist),
     email: show(stylist.email),
     phone: show(stylist.phoneNumber),
-    gender: show(stylist.gender),
+    gender: stylist.gender?.trim().toLowerCase() ?? "",
     businessName: show(stylist.businessName),
     location: show(stylist.location),
     linkedInUrl: show(stylist.linkedInUrl),
     tiktokHandle: show(stylist.tiktokHandle),
     instagramOrFacebook: show(stylist.instagramOrFacebook),
-    yearsExperience: experienceToYearsSelectValue(stylist.experience ?? ""),
+    yearsExperience: resolveExperienceOptionId(stylist.experience, experienceOpts),
     website: show(stylist.website),
     specialityTags: sp.specialityTags,
     otherSpecialities: otherSpecialityParts.length
@@ -476,6 +500,8 @@ export type StylistProfileScreenProps = {
    * When omitted, rows come from `stylist.booking_history` (e.g. applications detail).
    */
   stylistBookingsFromApi?: StylistProfileBookingsFromApi | null;
+  /** Called after a successful approve instead of redirecting to backHref. */
+  onAfterApprove?: () => void;
 };
 
 export function StylistProfileScreen({
@@ -487,6 +513,7 @@ export function StylistProfileScreen({
   errorMessage = null,
   showBookingActivityCard = false,
   stylistBookingsFromApi = null,
+  onAfterApprove,
 }: StylistProfileScreenProps) {
   const [updateSubmitting, setUpdateSubmitting] = useState(false);
   const {
@@ -496,21 +523,18 @@ export function StylistProfileScreen({
     rejectSubmitting,
     handleApprove,
     handleRejectConfirm,
-  } = useStylistApproveReject(stylistId, backHref);
+  } = useStylistApproveReject(stylistId, backHref, onAfterApprove);
 
-  const specialityOptionsQuery = useOnboardingOptions(
-    STYLIST_ONBOARDING_SCREEN.speciality,
-    STYLIST_ONBOARDING_USER_TYPE
-  );
-  const shopOptionsQuery = useOnboardingOptions(
-    STYLIST_ONBOARDING_SCREEN.recommendedShops,
-    STYLIST_ONBOARDING_USER_TYPE
-  );
+  const {
+    genderOptions,
+    experienceOptions,
+    specialityOptions,
+    shopOptions,
+    isLoading: optionsLoading,
+  } = useOnboardingFlow();
 
-  const specialityRows = specialityOptionsQuery.data;
-  const shopRows = shopOptionsQuery.data;
-  const optionsLoading =
-    specialityOptionsQuery.isLoading || shopOptionsQuery.isLoading;
+  const specialityRows = specialityOptions.length ? specialityOptions : undefined;
+  const shopRows = shopOptions.length ? shopOptions : undefined;
 
   const stylingFormLocked = stylist ? stylist.isVerified !== true : false;
   const showRejectedState = shouldShowRejectedState(stylist);
@@ -534,13 +558,14 @@ export function StylistProfileScreen({
         buildStylingInfoValues(
           stylist,
           specialityRows ?? NO_ONBOARDING_OPTIONS,
-          shopRows ?? NO_ONBOARDING_OPTIONS
+          shopRows ?? NO_ONBOARDING_OPTIONS,
+          experienceOptions
         )
       );
     } else {
       form.reset(STYLING_INFO_DEFAULTS);
     }
-  }, [stylist, form, specialityRows, shopRows]);
+  }, [stylist, form, specialityRows, shopRows, experienceOptions]);
 
   const profileSrc = stylist?.profile_picture?.trim();
 
@@ -669,15 +694,11 @@ export function StylistProfileScreen({
               <StylistProfileStylingInfoSection
                 control={form.control}
                 disabled={stylingFormLocked}
+                genderOptions={genderOptions}
+                experienceOptions={experienceOptions}
               />
 
               <EachContainer title="Styling Speciality">
-                {specialityOptionsQuery.isError && (
-                  <p className="mb-4 font-satoshi text-sm text-error-600">
-                    Could not load speciality options. Check the API or sign in
-                    again.
-                  </p>
-                )}
                 {optionsLoading &&
                   !(specialityRows && specialityRows.length) && (
                     <p className="mb-4 font-satoshi text-sm text-black-40">
@@ -692,11 +713,6 @@ export function StylistProfileScreen({
               </EachContainer>
 
               <EachContainer title="Recommended Shops">
-                {shopOptionsQuery.isError && (
-                  <p className="mb-4 font-satoshi text-sm text-error-600">
-                    Could not load recommended shop options.
-                  </p>
-                )}
                 {optionsLoading && !(shopRows && shopRows.length) && (
                   <p className="mb-4 font-satoshi text-sm text-black-40">
                     Loading shop options…

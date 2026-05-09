@@ -5,10 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { UserReviewsPageView } from "@/components/user-reviews-page-view"
-import {
-  useAdminReviewCounts,
-  useAdminReviews,
-} from "@/hooks/use-admin-reviews"
+import { useAdminReviews } from "@/hooks/use-admin-reviews"
 import { usePageTitle } from "@/hooks/use-page-title"
 import { adminReviewsApi, getApiErrorMessage } from "@/lib/api"
 import type { AdminReviewStatus } from "@/models/adminReviews"
@@ -35,7 +32,7 @@ export default function ReviewsPage() {
     ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
   })
 
-  const { counts, error: countsError } = useAdminReviewCounts(searchQuery)
+  const counts = reviews?.statusCounts ?? { pending: 0, approved: 0, rejected: 0 }
 
   const rows = useMemo(() => reviews?.data ?? [], [reviews?.data])
   const meta = reviews?.meta ?? {
@@ -114,11 +111,21 @@ export default function ReviewsPage() {
     [rejectMutation]
   )
 
+  const approveAllMutation = useMutation({
+    mutationFn: () => adminReviewsApi.approveAll(),
+    onSuccess: async () => {
+      toast.success("All reviews approved")
+      await invalidateReviews()
+    },
+    onError: (e) => {
+      toast.error(getApiErrorMessage(e))
+    },
+  })
+
   const handleApproveAll = useCallback(() => {
-    const pendingRows = rows.filter((row) => row.status === "pending")
-    if (pendingRows.length === 0 || approveMutation.isPending) return
-    pendingRows.forEach((row) => approveMutation.mutate(row.id))
-  }, [approveMutation, rows])
+    if (approveAllMutation.isPending) return
+    approveAllMutation.mutate()
+  }, [approveAllMutation])
 
   return (
     <div className="relative -m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
@@ -129,12 +136,6 @@ export default function ReviewsPage() {
           {error instanceof Error
             ? error.message
             : "Unable to load reviews."}
-        </p>
-      ) : null}
-
-      {countsError ? (
-        <p className="mb-4 text-sm text-destructive" role="alert">
-          Unable to load review counts.
         </p>
       ) : null}
 
@@ -150,6 +151,7 @@ export default function ReviewsPage() {
         disableApproveAll={
           activeTab !== "pending" ||
           meta.total === 0 ||
+          approveAllMutation.isPending ||
           disabledReviewIds.size > 0
         }
         disabledReviewIds={disabledReviewIds}

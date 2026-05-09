@@ -26,5 +26,6 @@ export type AdminReviewsListMeta = {
 export type AdminReviewsListNormalized = {
   data: AdminReviewRow[]
   meta: AdminReviewsListMeta
+  statusCounts: Record<AdminReviewStatus, number>
 }
 

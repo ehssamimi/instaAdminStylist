@@ -11,7 +11,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import { revenueYAxisUpperBound } from "@/lib/revenue-dashboard"
 import type { SalesDataPoint } from "@/models/dashboardOverview"
 
 const chartConfig = {
@@ -40,17 +39,22 @@ export function RevenuePerformanceChart({
   const fillGradientId = `${defsId}-fillSales`
   const lineShadowFilterId = `${defsId}-salesLineShadow`
 
-  const yMax = React.useMemo(() => {
-    const maxVal = Math.max(0, ...data.map((d) => d.sales))
-    return revenueYAxisUpperBound(maxVal)
-  }, [data])
+  const chartData = React.useMemo(
+    () => data.map((d) => ({ ...d, sales: Math.max(0, d.sales) })),
+    [data]
+  )
 
-  const yTicks = React.useMemo(() => {
-    const step = 500
-    const ticks: number[] = []
-    for (let v = 0; v <= yMax; v += step) ticks.push(v)
-    return ticks
-  }, [yMax])
+  const { yMax, yTicks } = React.useMemo(() => {
+    const maxVal = chartData.length > 0 ? Math.max(...chartData.map((d) => d.sales)) : 0
+    if (maxVal <= 0) {
+      return { yMax: 500, yTicks: [0, 125, 250, 375, 500] as number[] }
+    }
+    const padded = maxVal * 1.15
+    const yMaxRounded = Math.max(50, Math.ceil(padded / 50) * 50)
+    const step = yMaxRounded / 4
+    const ticks = Array.from({ length: 5 }, (_, i) => Math.round(i * step * 100) / 100)
+    return { yMax: yMaxRounded, yTicks: ticks }
+  }, [chartData])
 
   return (
     <EachContainer title={title} className="mt-0">
@@ -58,7 +62,7 @@ export function RevenuePerformanceChart({
         config={chartConfig}
         className="aspect-auto h-[280px] w-full [&_.recharts-cartesian-axis-tick_text]:!fill-gray-400"
       >
-        <AreaChart data={data} margin={{ left: 4, right: 8, top: 8, bottom: 4 }}>
+        <AreaChart data={chartData} margin={{ left: 4, right: 8, top: 8, bottom: 4 }}>
           <defs>
             <linearGradient id={fillGradientId} x1="0" y1="0" x2="0" y2="1">
               <stop
@@ -125,7 +129,7 @@ export function RevenuePerformanceChart({
           />
           <Area
             dataKey="sales"
-            type="natural"
+            type="linear"
             fill={`url(#${fillGradientId})`}
             fillOpacity={1}
             stroke="#111111"

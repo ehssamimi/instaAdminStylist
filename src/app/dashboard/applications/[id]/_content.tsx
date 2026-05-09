@@ -8,7 +8,7 @@ export default function ApplicationDetailContent() {
   const params = useParams()
   const id = typeof params.id === 'string' ? params.id : params.id?.[0] ?? ''
 
-  const { data, loading, error } = useStylistDetail(id)
+  const { data, loading, error, refetch } = useStylistDetail(id)
 
   return (
     <StylistProfileScreen
@@ -18,6 +18,7 @@ export default function ApplicationDetailContent() {
       errorMessage={error?.message ?? null}
       backHref="/dashboard/applications"
       backAriaLabel="Back to applications"
+      onAfterApprove={refetch}
     />
   )
 }

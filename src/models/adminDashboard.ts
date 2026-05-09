@@ -4,6 +4,24 @@
  */
 export type DashboardOverviewRange = 'past_week' | '3m' | '6m' | '1y'
 
+export type PerformanceRange = '7d' | '30d' | '6m'
+
+export interface PerformanceDataPoint {
+  date: string
+  value: number
+}
+
+export interface PerformanceMetric {
+  total: number
+  dataPoints: PerformanceDataPoint[]
+}
+
+export interface PerformancesResponse {
+  range: string
+  totalSales: PerformanceMetric
+  totalRevenue: PerformanceMetric
+}
+
 export interface AdminDashboardSummaryDto {
   bookingsToday: number
   todaysRevenue: number

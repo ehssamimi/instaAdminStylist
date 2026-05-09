@@ -34,7 +34,7 @@ import {
 } from '@/models/forgotPassword'
 import { VerifyEmailOtpRequest, VerifyEmailOtpResponse } from '@/models/verifyEmailOtp'
 import { DashboardStatsResponse, DashboardMetricsResponse } from '@/models/dashboardStats'
-import type { DashboardOverviewRange } from '@/models/adminDashboard'
+import type { DashboardOverviewRange, PerformanceRange, PerformancesResponse } from '@/models/adminDashboard'
 import { normalizeAdminDashboardPayload } from '@/lib/dashboard-overview-normalize'
 import { normalizeAdminRevenuePayload } from '@/lib/revenue-api-normalize'
 import { revenueQueryParamForBackend } from '@/lib/revenue-dashboard'
@@ -66,6 +66,7 @@ import {
   type AdminReportsListNormalized,
 } from '@/lib/reports-normalize'
 import type { OnboardingOption } from '@/models/onboardingOptions'
+import type { OnboardingFlowResponse } from '@/models/onboardingFlow'
 import {
   normalizeAdminUsersListResponse,
   type AdminUsersListNormalized,
@@ -225,6 +226,12 @@ export const dashboardApi = {
       throw new Error('Invalid revenue response shape')
     }
     return normalized
+  },
+
+  getPerformances: async (params?: { range?: PerformanceRange }) => {
+    return api.get<PerformancesResponse>('/admin/dashboard/performances', {
+      params: { range: params?.range ?? '7d' },
+    })
   },
 
   getStats: async () => {
@@ -620,6 +627,10 @@ export const adminReviewsApi = {
       {}
     )
   },
+
+  approveAll: async () => {
+    return api.post<unknown>('/admin/reviews/approve-all', {})
+  },
 }
 
 /** `GET /api/admin/users` → backend admin users list (`page`, `limit`, `search`). */
@@ -655,6 +666,9 @@ export const adminUsersApi = {
 export const onboardingApi = {
   getOptions: async (params: { screen_type: string; user_type: string }) => {
     return api.get<OnboardingOption[]>('/onboarding/options', { params })
+  },
+  getFlow: async (params: { role: string }) => {
+    return api.get<OnboardingFlowResponse>('/onboarding/flow', { params })
   },
 }
 

@@ -4,6 +4,7 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { ChartReferralSources } from "@/components/chart-referral-sources"
 import { SectionCards } from "@/components/section-cards"
 import { useDashboardOverview } from "@/hooks/use-dashboard-overview"
+import { usePerformances } from "@/hooks/use-performances"
 import { usePageTitle } from "@/hooks/use-page-title"
 
 const emptyStats = {
@@ -16,6 +17,7 @@ const emptyStats = {
 export default function Page() {
   const { title } = usePageTitle()
   const { data, loading, error, range, setRange } = useDashboardOverview()
+  const { data: perfData, loading: perfLoading, range: perfRange, setRange: setPerfRange } = usePerformances()
 
   return (
     <div className="flex flex-col gap-[10px]">
@@ -26,22 +28,22 @@ export default function Page() {
         </p>
       ) : null}
       <SectionCards stats={data?.stats ?? emptyStats} loading={loading} />
+      <ChartAreaInteractive
+        data={perfData}
+        loading={perfLoading}
+        range={perfRange}
+        onRangeChange={setPerfRange}
+      />
       {data ? (
-        <>
-          <ChartAreaInteractive performance={data.performance} />
-          <ChartReferralSources
-            referralSources={data.referralSources}
-            totalResponses={data.totalResponses}
-            range={range}
-            onRangeChange={setRange}
-            loading={loading}
-          />
-        </>
+        <ChartReferralSources
+          referralSources={data.referralSources}
+          totalResponses={data.totalResponses}
+          range={range}
+          onRangeChange={setRange}
+          loading={loading}
+        />
       ) : loading ? (
-        <div className="grid gap-[10px]">
-          <div className="h-[250px] animate-pulse rounded-xl bg-muted" />
-          <div className="h-[280px] animate-pulse rounded-xl bg-muted" />
-        </div>
+        <div className="h-[280px] animate-pulse rounded-xl bg-muted" />
       ) : null}
     </div>
   )

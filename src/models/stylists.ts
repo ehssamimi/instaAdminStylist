@@ -130,6 +130,8 @@ function stringifyExperience(ex: unknown): string | null {
   }
   if (typeof ex === 'object' && ex !== null) {
     const o = ex as Record<string, unknown>
+    const id = coalesceStr(o.id)
+    if (id) return id
     const label = coalesceStr(o.label) ?? coalesceStr(o.name)
     if (label) return label
     const y = o.years ?? o.yearsOfExperience

@@ -6,7 +6,11 @@ import { toast } from "sonner"
 
 import { getApiErrorMessage, stylistApplicationsApi } from "@/lib/api"
 
-export function useStylistApproveReject(stylistId: string, backHref: string) {
+export function useStylistApproveReject(
+  stylistId: string,
+  backHref: string,
+  onAfterApprove?: () => void
+) {
   const router = useRouter()
   const [rejectModalOpen, setRejectModalOpen] = useState(false)
   const [approveSubmitting, setApproveSubmitting] = useState(false)
@@ -18,13 +22,17 @@ export function useStylistApproveReject(stylistId: string, backHref: string) {
     try {
       await stylistApplicationsApi.approve(stylistId)
       toast.success("Stylist approved.")
-      router.push(backHref)
+      if (onAfterApprove) {
+        onAfterApprove()
+      } else {
+        router.push(backHref)
+      }
     } catch (e) {
       toast.error(getApiErrorMessage(e))
     } finally {
       setApproveSubmitting(false)
     }
-  }, [stylistId, approveSubmitting, router, backHref])
+  }, [stylistId, approveSubmitting, router, backHref, onAfterApprove])
 
   const handleRejectConfirm = useCallback(
     async ({

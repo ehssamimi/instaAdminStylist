@@ -1,63 +1,62 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts"
-
+import * as React from "react";
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  LabelList,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from "@/components/ui/chart";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group"
-import type { DashboardOverviewRange } from "@/models/adminDashboard"
-import type { ReferralSourceDatum } from "@/models/dashboardOverview"
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import type { DashboardOverviewRange } from "@/models/adminDashboard";
+import type { ReferralSourceDatum } from "@/models/dashboardOverview";
 
 const chartConfig = {
   count: {
     label: "Responses",
     color: "var(--color-brand-800)",
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 /** Maps the smallest count in the series to brand-200 and the largest to brand-800 (theme tokens). */
 function brandBarFill(count: number, min: number, max: number): string {
   if (max <= min) {
-    return "var(--color-brand-500)"
+    return "var(--color-brand-500)";
   }
-  const t = Math.max(0, Math.min(1, (count - min) / (max - min)))
-  const pct = (t * 100).toFixed(2)
-  return `color-mix(in srgb, var(--color-brand-800) ${pct}%, var(--color-brand-200))`
+  const t = Math.max(0, Math.min(1, (count - min) / (max - min)));
+  const pct = (t * 100).toFixed(2);
+  return `color-mix(in srgb, var(--color-brand-800) ${pct}%, var(--color-brand-200))`;
 }
 
 function withBarFills(data: ReferralSourceDatum[]): (ReferralSourceDatum & {
-  fill: string
+  fill: string;
 })[] {
-  if (data.length === 0) return []
-  const counts = data.map((d) => d.count)
-  const min = Math.min(...counts)
-  const max = Math.max(...counts)
+  if (data.length === 0) return [];
+  const counts = data.map((d) => d.count);
+  const min = Math.min(...counts);
+  const max = Math.max(...counts);
   return data.map((d) => ({
     ...d,
     fill: brandBarFill(d.count, min, max),
-  }))
+  }));
 }
 
 /** Tabs: straight underline via inset shadow (avoids rounded-corner “hook” from border-b on ToggleGroupItem). */
@@ -66,22 +65,22 @@ const rangeToggleItemClassName =
   "hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 " +
   "data-[state=on]:bg-transparent " +
   "data-[state=off]:text-muted-foreground data-[state=on]:text-brand-700 data-[state=on]:font-bold " +
-  "data-[state=on]:shadow-[inset_0_-2px_0_0_var(--color-brand-700)]"
+  "data-[state=on]:shadow-[inset_0_-2px_0_0_var(--color-brand-700)]";
 
 const RANGE_OPTIONS: { value: DashboardOverviewRange; label: string }[] = [
   { value: "past_week", label: "Past Week" },
   { value: "3m", label: "Past 3 Months" },
   { value: "6m", label: "Past 6 Months" },
   { value: "1y", label: "Past Year" },
-]
+];
 
 type ChartReferralSourcesProps = {
-  referralSources: ReferralSourceDatum[]
-  totalResponses: number
-  range: DashboardOverviewRange
-  onRangeChange: (next: DashboardOverviewRange) => void
-  loading?: boolean
-}
+  referralSources: ReferralSourceDatum[];
+  totalResponses: number;
+  range: DashboardOverviewRange;
+  onRangeChange: (next: DashboardOverviewRange) => void;
+  loading?: boolean;
+};
 
 export function ChartReferralSources({
   referralSources,
@@ -93,26 +92,26 @@ export function ChartReferralSources({
   const chartData = React.useMemo(
     () => withBarFills(referralSources),
     [referralSources]
-  )
+  );
 
   const selectLabel =
-    RANGE_OPTIONS.find((o) => o.value === range)?.label ?? "Past Week"
+    RANGE_OPTIONS.find((o) => o.value === range)?.label ?? "Past Week";
 
   return (
-    <Card className="@container/card shadow-none  ">
-      <CardHeader>
+    <Card className="@container/card shadow-none">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <CardTitle className="text-base font-bold text-gray-900">
           How did users hear about Instastylin?{" "}
           <span className="font-bold">
             · {totalResponses.toLocaleString()} responses
           </span>
         </CardTitle>
-        <CardAction>
+        <div className="flex items-center">
           <ToggleGroup
             type="single"
             value={range}
             onValueChange={(v) => {
-              if (v && !loading) onRangeChange(v as DashboardOverviewRange)
+              if (v && !loading) onRangeChange(v as DashboardOverviewRange);
             }}
             variant="default"
             disabled={loading}
@@ -131,7 +130,7 @@ export function ChartReferralSources({
           <Select
             value={range}
             onValueChange={(v) => {
-              if (!loading) onRangeChange(v as DashboardOverviewRange)
+              if (!loading) onRangeChange(v as DashboardOverviewRange);
             }}
             disabled={loading}
           >
@@ -154,10 +153,13 @@ export function ChartReferralSources({
               ))}
             </SelectContent>
           </Select>
-        </CardAction>
+        </div>
       </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[280px] w-full">
+      <CardContent className="pt-2">
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-auto h-[280px] w-full"
+        >
           <BarChart
             data={chartData}
             margin={{ top: 28, right: 8, left: 8, bottom: 4 }}
@@ -193,5 +195,5 @@ export function ChartReferralSources({
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

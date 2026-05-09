@@ -1,56 +1,54 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Clock, FileText, Mail, Wallet } from 'lucide-react'
-import { toast } from 'sonner'
-import { BookingRatingStars } from '@/components/booking-rating-stars'
+import { useState } from "react";
+import { Check, Clock, FileText, Loader2, Mail, Wallet } from "lucide-react";
+import { toast } from "sonner";
+import { BookingRatingStars } from "@/components/booking-rating-stars";
 import {
   DetailInfoCard,
   DetailSectionCard,
   NameAvatar,
-} from '@/components/detail-info-card'
-import { HeaderActionButton } from '@/components/header-action-button'
-import { BookingDetailsPageSkeleton } from '@/components/booking-details-page-skeleton'
-import { PageBackHeading } from '@/components/page-back-heading'
-import { Badge } from '@/components/ui/badge'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+} from "@/components/detail-info-card";
+import { HeaderActionButton } from "@/components/header-action-button";
+import { BookingDetailsPageSkeleton } from "@/components/booking-details-page-skeleton";
+import { PageBackHeading } from "@/components/page-back-heading";
+import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   TableStatusBadge,
   tableStatusLabels,
-} from '@/components/ui/table-status-badge'
-import { bookingsApi, getApiErrorMessage } from '@/lib/api'
-import { formatDurationLabel } from '@/lib/booking-format'
-import type { BookingDetailDto } from '@/models/bookings'
+} from "@/components/ui/table-status-badge";
+import { bookingsApi, getApiErrorMessage } from "@/lib/api";
+import { formatDurationLabel } from "@/lib/booking-format";
+import type { BookingDetailDto } from "@/models/bookings";
 
 type BookingDetailsPageViewProps = {
-  booking: BookingDetailDto | null
-  backHref: string
-  backAriaLabel: string
-  loading?: boolean
-  errorMessage?: string | null
-}
+  booking: BookingDetailDto | null;
+  backHref: string;
+  backAriaLabel: string;
+  loading?: boolean;
+  errorMessage?: string | null;
+};
 
 function reviewBody(text: string | null) {
-  const t = text?.trim()
+  const t = text?.trim();
   if (!t) {
-    return (
-      <span className="text-muted-foreground">No response yet.</span>
-    )
+    return <span className="text-muted-foreground">No response yet.</span>;
   }
   return (
     <span className="font-satoshi text-sm font-normal leading-relaxed text-gray-700">
       {t}
     </span>
-  )
+  );
 }
 
 function canCancelBookingStatus(status: string) {
-  const normalizedStatus = status.trim().toLowerCase().replace(/-/g, '_')
+  const normalizedStatus = status.trim().toLowerCase().replace(/-/g, "_");
   return (
-    normalizedStatus === 'scheduled' ||
-    normalizedStatus === 'in_progress' ||
-    normalizedStatus === 'pending_payment'
-  )
+    normalizedStatus === "scheduled" ||
+    normalizedStatus === "in_progress" ||
+    normalizedStatus === "pending_payment"
+  );
 }
 
 export function BookingDetailsPageView({
@@ -60,51 +58,48 @@ export function BookingDetailsPageView({
   loading = false,
   errorMessage = null,
 }: BookingDetailsPageViewProps) {
-  const [cancelCallDialogOpen, setCancelCallDialogOpen] = useState(false)
+  const [cancelCallDialogOpen, setCancelCallDialogOpen] = useState(false);
   const [refundServiceFeeDialogOpen, setRefundServiceFeeDialogOpen] =
-    useState(false)
+    useState(false);
   const [cancelledBookingIds, setCancelledBookingIds] = useState<Set<string>>(
     () => new Set()
-  )
-  const [refundedFeeBookingIds, setRefundedFeeBookingIds] = useState<
-    Set<string>
-  >(() => new Set())
+  );
+  const [refundState, setRefundState] = useState<
+    "idle" | "loading" | "success"
+  >("idle");
   const canShowCancelCall =
     booking != null &&
     canCancelBookingStatus(booking.status) &&
-    !cancelledBookingIds.has(booking.bookingId)
-  const canShowRefundServiceFee =
-    booking != null && !refundedFeeBookingIds.has(booking.bookingId)
+    !cancelledBookingIds.has(booking.bookingId);
+  const canShowRefundServiceFee = booking != null;
 
   async function handleCancelBooking() {
-    if (!booking) return
+    if (!booking) return;
     try {
-      await bookingsApi.cancel(booking.bookingId)
+      await bookingsApi.cancel(booking.bookingId);
       setCancelledBookingIds((current) => {
-        const next = new Set(current)
-        next.add(booking.bookingId)
-        return next
-      })
-      toast.success('Booking canceled successfully.')
+        const next = new Set(current);
+        next.add(booking.bookingId);
+        return next;
+      });
+      toast.success("Booking canceled successfully.");
     } catch (e) {
-      toast.error(getApiErrorMessage(e))
-      throw e
+      toast.error(getApiErrorMessage(e));
+      throw e;
     }
   }
 
   async function handleRefundServiceFee() {
-    if (!booking) return
+    if (!booking) return;
+    setRefundState("loading");
     try {
-      await bookingsApi.refundFees(booking.bookingId)
-      setRefundedFeeBookingIds((current) => {
-        const next = new Set(current)
-        next.add(booking.bookingId)
-        return next
-      })
-      toast.success('Service fee refunded successfully.')
+      await bookingsApi.refundFees(booking.bookingId);
+      setRefundState("success");
+      toast.success("Service fee refunded successfully.");
     } catch (e) {
-      toast.error(getApiErrorMessage(e))
-      throw e
+      setRefundState("idle");
+      toast.error(getApiErrorMessage(e));
+      throw e;
     }
   }
 
@@ -130,13 +125,32 @@ export function BookingDetailsPageView({
               </HeaderActionButton>
             ) : null}
             {canShowRefundServiceFee ? (
-              <HeaderActionButton
-                type="button"
-                variant="error"
-                onClick={() => setRefundServiceFeeDialogOpen(true)}
-              >
-                Refund Service Fee
-              </HeaderActionButton>
+              refundState === "loading" ? (
+                <HeaderActionButton
+                  type="button"
+                  disabled
+                  className="border-gray-200 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-200"
+                >
+                  Refund Processing
+                  <Loader2 className="animate-spin" />
+                </HeaderActionButton>
+              ) : refundState === "success" ? (
+                <HeaderActionButton
+                  type="button"
+                  className="border-success-100 bg-success-200 text-success-600 hover:bg-success-200 hover:border-success-100"
+                >
+                  Refund Processing
+                  <Check />
+                </HeaderActionButton>
+              ) : (
+                <HeaderActionButton
+                  type="button"
+                  variant="error"
+                  onClick={() => setRefundServiceFeeDialogOpen(true)}
+                >
+                  Refund Service Fee
+                </HeaderActionButton>
+              )
             ) : null}
           </div>
         ) : null}
@@ -178,7 +192,7 @@ export function BookingDetailsPageView({
                 {booking.bookingId}
               </p> */}
             </div>
-            {booking.status === 'completed' ? (
+            {booking.status === "completed" ? (
               <Badge variant="success">{tableStatusLabels.completed}</Badge>
             ) : (
               <TableStatusBadge status={booking.status} />
@@ -252,10 +266,10 @@ export function BookingDetailsPageView({
                       className="border-b border-border-soft pb-4 last:border-b-0 last:pb-0"
                     >
                       <p className="font-satoshi text-sm font-semibold text-gray-900">
-                        {qa.question || '—'}
+                        {qa.question || "—"}
                       </p>
                       <p className="mt-1 font-satoshi text-sm font-normal leading-relaxed text-gray-700">
-                        {qa.answer?.trim() ? qa.answer : '—'}
+                        {qa.answer?.trim() ? qa.answer : "—"}
                       </p>
                     </li>
                   ))}
@@ -297,5 +311,5 @@ export function BookingDetailsPageView({
         </p>
       )}
     </div>
-  )
+  );
 }
