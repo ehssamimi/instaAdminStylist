@@ -14,6 +14,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 import { SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
@@ -47,8 +48,14 @@ export function AppSidebar({
     return withLeading !== "/" ? withLeading.replace(/\/+$/, "") : withLeading;
   };
 
+  const { isMobile, setOpenMobile } = useSidebar()
+
   const matchedNav = matchNavItem(pathname, searchParams);
   const activeHref = matchedNav ? normalize(matchedNav.url) : undefined;
+
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false)
+  }
 
   return (
     <Sidebar
@@ -85,7 +92,7 @@ export function AppSidebar({
                       isActive={isActive}
                       className="gap-3 py-6 font-normal !text-gray-500 data-[active=true]:!font-medium data-[active=true]:!text-neutral-black_03 [&>svg]:!size-6"
                     >
-                      <Link href={href} prefetch>
+                      <Link href={href} prefetch onClick={handleNavClick}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </Link>

@@ -162,7 +162,7 @@ export function ChartReferralSources({
         >
           <BarChart
             data={chartData}
-            margin={{ top: 28, right: 8, left: 8, bottom: 4 }}
+            margin={{ top: 28, right: 8, left: 8, bottom: 0 }}
             barCategoryGap="10%"
           >
             <CartesianGrid vertical={false} />
@@ -170,9 +170,12 @@ export function ChartReferralSources({
               dataKey="label"
               tickLine={false}
               axisLine={false}
-              tickMargin={10}
+              tickMargin={4}
               interval={0}
-              tick={{ fontSize: 14 }}
+              height={64}
+              angle={-35}
+              textAnchor="end"
+              tick={{ fontSize: 10 }}
             />
             <YAxis hide domain={[0, "dataMax"]} />
             <ChartTooltip

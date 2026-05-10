@@ -36,8 +36,10 @@ export function middleware(request: NextRequest) {
   }
 
   if (pathname === '/admin-login') {
-    const redirectPath = isAdmin ? '/dashboard' : ''
-    return NextResponse.redirect(new URL(redirectPath, request.url))
+    if (isAdmin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return NextResponse.next()
   }
 
   return NextResponse.next()

@@ -47,26 +47,26 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex h-16 w-full shrink-0 items-center gap-2   bg-card transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:pr-10 lg:pl-2">
-        <div className="">
+    <header className="fixed top-0 left-0 right-0 z-50 flex h-16 w-full shrink-0 items-center gap-2 bg-card transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+      <div className="flex w-full items-center gap-2 px-4 lg:gap-2 lg:pr-10 lg:pl-2">
+        {/* Hamburger — mobile only */}
+        <SidebarTrigger className="flex shrink-0 lg:hidden" />
+
+        <div className="flex-shrink-0">
           <Link
             href="/"
-            className="flex justify-start items-center w-[calc(var(--sidebar-width))]"
+            className="flex justify-start items-center lg:w-[calc(var(--sidebar-width))]"
           >
             <Image
               src="/logo.svg"
               alt="Insta Styling"
               width={180}
               height={32}
+              className="h-6 w-auto lg:h-8"
             />
           </Link>
         </div>
-        {/* <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
-        /> */}
+
         {headerBreadcrumbs && headerBreadcrumbs.length > 0 && (
           <div className="mr-auto flex items-center gap-2">
             <Breadcrumb>
@@ -99,9 +99,9 @@ export function SiteHeader() {
           </div>
         )}
 
-        <h1 className="text-lg font-semibold text-neutral-black_03 ml-auto flex items-center">
+        <h1 className="ml-auto flex shrink-0 items-center text-base font-semibold text-neutral-black_03 lg:text-lg">
           Admin
-          <span className="text-xs text-gray-300 ml-1">(v-0.0.2)</span>
+          <span className="ml-1 text-[10px] text-gray-300 lg:text-xs">(v-0.0.2)</span>
         </h1>
       </div>
     </header>
