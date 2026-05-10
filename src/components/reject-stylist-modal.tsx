@@ -102,7 +102,7 @@ export function RejectStylistModal({
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* <div className="flex flex-col gap-2">
             <Label className="font-satoshi text-sm font-medium text-black-100">
               Attachment (optional, max 5 MB)
             </Label>
@@ -147,7 +147,7 @@ export function RejectStylistModal({
                 {attachmentError}
               </p>
             ) : null}
-          </div>
+          </div> */}
         </div>
 
         <DialogFooter className="flex flex-row flex-wrap gap-3 px-6 pb-6 pt-0 sm:justify-end">
