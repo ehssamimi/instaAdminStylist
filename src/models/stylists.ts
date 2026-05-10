@@ -26,6 +26,8 @@ export type StylistDetailsApiDto = {
   total_sales?: number | string | null
   gender?: string | null
   linkedInUrl?: string | null
+  instagramHandle?: string | null
+  facebookHandle?: string | null
   tiktokHandle?: string | null
   instagramOrFacebook?: string | null
   website?: string | null
@@ -231,6 +233,15 @@ function formatDetailTotalRevenue(raw: StylistDetailsApiDto): string {
   return s ?? '—'
 }
 
+function pickInstagramOrFacebookHandle(raw: StylistDetailsApiDto): string | null {
+  return (
+    coalesceStr(raw.instagramHandle) ??
+    coalesceStr(raw.facebookHandle) ??
+    coalesceStr(raw.instagramOrFacebook) ??
+    coalesceStr(raw.tiktokHandle)
+  )
+}
+
 export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDetailDto {
   const first =
     coalesceStr(raw.firstName) ?? coalesceStr(raw.first_name) ?? ''
@@ -264,8 +275,8 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
     businessName: raw.businessName ?? null,
     location: raw.location ?? null,
     linkedInUrl: raw.linkedInUrl ?? null,
-    tiktokHandle: raw.tiktokHandle ?? null,
-    instagramOrFacebook: raw.instagramOrFacebook ?? null,
+    tiktokHandle: coalesceStr(raw.tiktokHandle),
+    instagramOrFacebook: pickInstagramOrFacebookHandle(raw),
     experience: stringifyExperience(raw.experience),
     website: raw.website ?? null,
     bio: raw.bio ?? null,
