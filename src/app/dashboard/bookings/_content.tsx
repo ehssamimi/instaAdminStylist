@@ -3,7 +3,6 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ColumnDef } from '@tanstack/react-table'
-import { format, isValid, parse } from 'date-fns'
 import { FileText, Loader2 } from 'lucide-react'
 
 import { DataTable } from '@/components/data-table'
@@ -16,15 +15,7 @@ import {
 import { usePageTitle } from '@/hooks/use-page-title'
 import { useBookingsOverview } from '@/hooks/use-bookings-overview'
 import { bookingRowSchema, type BookingRow } from '@/lib/booking-schema'
-
-function formatBookingListDate(value: string | undefined | null): string {
-  if (!value) return '—'
-  const fromPattern = parse(value, 'yyyy-MM-dd HH:mm:ss', new Date())
-  if (isValid(fromPattern)) return format(fromPattern, 'MM/dd/yy')
-  const fallback = new Date(value.replace(' ', 'T'))
-  if (isValid(fallback)) return format(fallback, 'MM/dd/yy')
-  return value
-}
+import { formatBookingDateTime } from '@/lib/booking-format'
 
 export default function BookingsContent() {
   const { title } = usePageTitle()
@@ -68,7 +59,7 @@ export default function BookingsContent() {
         accessorKey: 'date',
         header: 'Date',
         enableSorting: false,
-        cell: ({ row }) => formatBookingListDate(row.original.date),
+        cell: ({ row }) => formatBookingDateTime(row.original.date),
       },
       {
         accessorKey: 'stylist',
@@ -133,7 +124,7 @@ export default function BookingsContent() {
         ...bookingsData.map((row) =>
           [
             row.booking_id,
-            formatBookingListDate(row.date),
+            formatBookingDateTime(row.date),
             `"${row.stylist}"`,
             `"${row.customer}"`,
             row.duration,

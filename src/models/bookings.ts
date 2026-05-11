@@ -1,10 +1,10 @@
-import { format, isValid, parse } from 'date-fns'
+import { formatBookingDateTime } from '@/lib/booking-format'
 
 /** Admin bookings list item as returned by `GET /api/admin/bookings`. */
 export interface AdminBookingListItem {
   bookingId: string
   stringId: string
-  sessionDate: string
+  startTime: string
   stylistName: string
   customerName: string
   duration: string | number
@@ -75,7 +75,7 @@ export function normalizeAdminBookingListItem(
   return {
     id: item.bookingId,
     booking_id: item.stringId,
-    date: item.sessionDate ?? '',
+    date: item.startTime ?? '',
     stylist: item.stylistName,
     customer: item.customerName,
     duration: durationLabel,
@@ -94,7 +94,7 @@ export interface AdminBookingDetailApi {
   bookingId: string
   stringId: string
   status: string
-  date: string
+  startTime: string
   customer: { name?: string; email?: string; profilePicture?: string | null }
   stylist: { name?: string; email?: string; profilePicture?: string | null }
   callDuration: number
@@ -140,17 +140,6 @@ export interface BookingDetailResponse {
   data: BookingDetailDto | null
 }
 
-function formatBookingDetailDateTime(value: string): string {
-  if (!value?.trim()) return '—'
-  const patterns = ['yyyy-MM-dd HH:mm:ss', 'yyyy-MM-dd HH:mm']
-  for (const p of patterns) {
-    const d = parse(value, p, new Date())
-    if (isValid(d)) return format(d, "MM/dd/yy '·' h:mm a")
-  }
-  const fallback = new Date(value.replace(' ', 'T'))
-  if (isValid(fallback)) return format(fallback, "MM/dd/yy '·' h:mm a")
-  return value
-}
 
 function unwrapBookingDetailPayload(raw: unknown): Record<string, unknown> | null {
   if (raw == null || typeof raw !== 'object') return null
@@ -175,7 +164,9 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
   const stringId = typeof o.stringId === 'string' ? o.stringId : null
   if (!bookingId || !stringId) return null
 
-  const dateRaw = typeof o.date === 'string' ? o.date : ''
+  const dateRaw = typeof o.startTime === 'string' ? o.startTime
+    : typeof o.date === 'string' ? o.date
+    : ''
   const status = typeof o.status === 'string' ? o.status : ''
 
   const c = o.customer != null && typeof o.customer === 'object' ? (o.customer as Record<string, unknown>) : {}
@@ -238,7 +229,7 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
     bookingId,
     stringId,
     status,
-    dateDisplay: formatBookingDetailDateTime(dateRaw),
+    dateDisplay: formatBookingDateTime(dateRaw),
     dateRaw,
     customerName,
     customerEmail,

@@ -13,6 +13,7 @@ import {
   formatBookingStatusLabel,
 } from "@/components/ui/table-status-badge"
 import { bookingRowSchema } from "@/lib/booking-schema"
+import { formatBookingDateTime } from "@/lib/booking-format"
 import type { BookingRowDto } from "@/models/bookings"
 
 export type BookingActivityRowClickContext =
@@ -102,7 +103,13 @@ export function BookingActivitySection({
     }
 
     const start = [
-      { accessorKey: "date" as const, header: "Date", enableSorting: false },
+      {
+        accessorKey: "date" as const,
+        header: "Date",
+        enableSorting: false,
+        cell: ({ row }: { row: { original: BookingRowDto } }) =>
+          formatBookingDateTime(row.original.date),
+      },
       {
         accessorKey: "duration" as const,
         header: "Duration",
@@ -177,7 +184,7 @@ export function BookingActivitySection({
         headers.join(","),
         ...filteredRows.map((row) =>
           [
-            row.date,
+            formatBookingDateTime(row.date),
             row.duration,
             row.total_cost,
             `"${counterpartColumn === "customer" ? row.customer : row.stylist}"`,
