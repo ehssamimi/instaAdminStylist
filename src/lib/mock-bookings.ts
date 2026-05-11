@@ -25,7 +25,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "bcc7c225-62f7-43d3-9c01-5829fbe6482e",
     stringId: "ZWSVDK",
-    date: "2026-03-10 10:00:00",
+    startTime: "2026-03-10 10:00:00",
     stylistName: "Jane Smith",
     customerName: "Charlotte White",
     duration: 10,
@@ -37,7 +37,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111101",
     stringId: "BKJ001",
-    date: "2026-03-09 14:30:00",
+    startTime: "2026-03-09 14:30:00",
     stylistName: "Mark Johnson",
     customerName: "Noah Davis",
     duration: 30,
@@ -49,7 +49,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111102",
     stringId: "BKJ002",
-    date: "2026-03-08 11:00:00",
+    startTime: "2026-03-08 11:00:00",
     stylistName: "Sophia Williams",
     customerName: "Emma Wilson",
     duration: 45,
@@ -61,7 +61,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111103",
     stringId: "BKJ003",
-    date: "2026-03-07 09:15:00",
+    startTime: "2026-03-07 09:15:00",
     stylistName: "Sam Patel",
     customerName: "Liam Chen",
     duration: 20,
@@ -73,7 +73,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111104",
     stringId: "BKJ004",
-    date: "2026-03-06 16:45:00",
+    startTime: "2026-03-06 16:45:00",
     stylistName: "Amara Okafor",
     customerName: "Olivia Brown",
     duration: 15,
@@ -85,7 +85,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111105",
     stringId: "BKJ005",
-    date: "2026-03-05 10:00:00",
+    startTime: "2026-03-05 10:00:00",
     stylistName: "Derek Nguyen",
     customerName: "James Carter",
     duration: 60,
@@ -97,7 +97,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111106",
     stringId: "BKJ006",
-    date: "2026-03-04 13:20:00",
+    startTime: "2026-03-04 13:20:00",
     stylistName: "Priya Mehta",
     customerName: "Sophia Lee",
     duration: 30,
@@ -109,7 +109,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111107",
     stringId: "BKJ007",
-    date: "2026-03-03 08:00:00",
+    startTime: "2026-03-03 08:00:00",
     stylistName: "Taylor Brooks",
     customerName: "Ethan Hall",
     duration: 10,
@@ -121,7 +121,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111108",
     stringId: "BKJ008",
-    date: "2026-03-02 15:10:00",
+    startTime: "2026-03-02 15:10:00",
     stylistName: "Isabelle Fontaine",
     customerName: "Ava Thompson",
     duration: 25,
@@ -133,7 +133,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111109",
     stringId: "BKJ009",
-    date: "2026-03-01 12:00:00",
+    startTime: "2026-03-01 12:00:00",
     stylistName: "Marcus Hall",
     customerName: "Benjamin Scott",
     duration: 40,
@@ -145,7 +145,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111110",
     stringId: "BKJ010",
-    date: "2026-02-28 17:30:00",
+    startTime: "2026-02-28 17:30:00",
     stylistName: "Chloe Dubois",
     customerName: "Harper Young",
     duration: 15,
@@ -157,7 +157,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111111",
     stringId: "BKJ011",
-    date: "2026-02-27 11:45:00",
+    startTime: "2026-02-27 11:45:00",
     stylistName: "Ethan Brooks",
     customerName: "Daniel Moore",
     duration: 35,
@@ -169,7 +169,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111112",
     stringId: "BKJ012",
-    date: "2026-02-26 09:30:00",
+    startTime: "2026-02-26 09:30:00",
     stylistName: "Jane Smith",
     customerName: "Nina Patel",
     duration: 20,
@@ -181,7 +181,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111113",
     stringId: "BKJ013",
-    date: "2026-02-25 14:00:00",
+    startTime: "2026-02-25 14:00:00",
     stylistName: "Jane Smith",
     customerName: "Ryan Cole",
     duration: 45,
@@ -193,7 +193,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111114",
     stringId: "BKJ014",
-    date: "2026-02-24 10:15:00",
+    startTime: "2026-02-24 10:15:00",
     stylistName: "Mark Johnson",
     customerName: "Elena Park",
     duration: 25,
@@ -205,7 +205,7 @@ export const MOCK_ADMIN_BOOKING_ITEMS: AdminBookingListItem[] = [
   {
     bookingId: "a1111111-1111-4111-8111-111111111115",
     stringId: "BKJ015",
-    date: "2026-02-23 16:00:00",
+    startTime: "2026-02-23 16:00:00",
     stylistName: "Mark Johnson",
     customerName: "Chris Allen",
     duration: 30,
@@ -251,7 +251,7 @@ export function getMockBookingDetail(id: string): BookingDetailDto | null {
     bookingId: item.bookingId,
     stringId: item.stringId,
     status: item.status,
-    date: item.date,
+    startTime: item.startTime,
     customer: { name: row.customer, email: customerEmail },
     stylist: { name: row.stylist, email: stylistEmail },
     callDuration: item.duration,
