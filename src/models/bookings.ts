@@ -4,13 +4,14 @@ import { format, isValid, parse } from 'date-fns'
 export interface AdminBookingListItem {
   bookingId: string
   stringId: string
-  date: string
+  sessionDate: string
   stylistName: string
   customerName: string
-  duration: number
+  duration: string | number
   totalCost: number | null
   serviceFee: number | null
   currency: string
+  callType?: string
   status: string
 }
 
@@ -64,16 +65,23 @@ export function normalizeAdminBookingListItem(
           currency,
         }).format(n)
 
+  const durationLabel =
+    typeof item.duration === 'string'
+      ? item.duration
+      : typeof item.duration === 'number' && Number.isFinite(item.duration)
+        ? `${item.duration} min`
+        : '—'
+
   return {
     id: item.bookingId,
     booking_id: item.stringId,
-    date: item.date,
+    date: item.sessionDate ?? '',
     stylist: item.stylistName,
     customer: item.customerName,
-    duration: `${item.duration} min`,
+    duration: durationLabel,
     total_cost: fmt(item.totalCost),
     service_fee: fmt(item.serviceFee),
-    call_type: '—',
+    call_type: item.callType ?? '—',
     status: item.status,
   }
 }

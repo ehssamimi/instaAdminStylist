@@ -17,7 +17,8 @@ import { usePageTitle } from '@/hooks/use-page-title'
 import { useBookingsOverview } from '@/hooks/use-bookings-overview'
 import { bookingRowSchema, type BookingRow } from '@/lib/booking-schema'
 
-function formatBookingListDate(value: string): string {
+function formatBookingListDate(value: string | undefined | null): string {
+  if (!value) return '—'
   const fromPattern = parse(value, 'yyyy-MM-dd HH:mm:ss', new Date())
   if (isValid(fromPattern)) return format(fromPattern, 'MM/dd/yy')
   const fallback = new Date(value.replace(' ', 'T'))
