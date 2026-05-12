@@ -89,6 +89,19 @@ export function ChartReferralSources({
   onRangeChange,
   loading = false,
 }: ChartReferralSourcesProps) {
+  const [isDesktop, setIsDesktop] = React.useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 768px)").matches
+      : true
+  );
+
+  React.useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const chartData = React.useMemo(
     () => withBarFills(referralSources),
     [referralSources]
@@ -98,7 +111,7 @@ export function ChartReferralSources({
     RANGE_OPTIONS.find((o) => o.value === range)?.label ?? "Past Week";
 
   return (
-    <Card className="@container/card shadow-none">
+    <Card className="@container/card shadow-none py-[12px]">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <CardTitle className="text-base font-bold text-gray-900">
           How did users hear about Instastylin?{" "}
@@ -155,7 +168,7 @@ export function ChartReferralSources({
           </Select>
         </div>
       </CardHeader>
-      <CardContent className="pt-2">
+      <CardContent className="pt-2 px-3">
         <ChartContainer
           config={chartConfig}
           className="aspect-auto h-[280px] w-full"
@@ -170,12 +183,12 @@ export function ChartReferralSources({
               dataKey="label"
               tickLine={false}
               axisLine={false}
-              tickMargin={4}
+              tickMargin={isDesktop ? 8 : 4}
               interval={0}
-              height={64}
-              angle={-35}
-              textAnchor="end"
-              tick={{ fontSize: 10 }}
+              height={isDesktop ? 32 : 64}
+              angle={isDesktop ? 0 : -35}
+              textAnchor={isDesktop ? "middle" : "end"}
+              tick={{ fontSize: 12, fill: "#A4A7AE", fontFamily: "Satoshi", fontWeight: 400 }}
             />
             <YAxis hide domain={[0, "dataMax"]} />
             <ChartTooltip

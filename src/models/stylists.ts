@@ -9,6 +9,7 @@ export type StylistDetailsApiDto = {
   last_name?: string | null
   email?: string | null
   phoneNumber?: string | null
+  countryCode?: string | null
   businessName?: string | null
   bio?: string | null
   location?: string | null
@@ -270,7 +271,12 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
     avg_weekly_availability: '—',
     avg_weekly_drop_in: '—',
     email: coalesceStr(raw.email) ?? '',
-    phoneNumber: coalesceStr(raw.phoneNumber),
+    phoneNumber: (() => {
+      const cc = coalesceStr(raw.countryCode)
+      const num = coalesceStr(raw.phoneNumber)
+      if (!num) return null
+      return cc ? `${cc}${num}` : num
+    })(),
     gender: raw.gender ?? null,
     businessName: raw.businessName ?? null,
     location: raw.location ?? null,

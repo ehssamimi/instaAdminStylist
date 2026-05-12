@@ -199,7 +199,7 @@ export function BookingDetailsPageView({
             )}
           </div>
 
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <DetailInfoCard
               label="Customer Name"
               value={booking.customerName}
@@ -210,6 +210,7 @@ export function BookingDetailsPageView({
                 />
               }
             />
+            
             <DetailInfoCard
               label="Customer Email"
               value={booking.customerEmail}

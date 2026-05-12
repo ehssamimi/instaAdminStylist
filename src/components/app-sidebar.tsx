@@ -39,7 +39,7 @@ export function AppSidebar({
     setNavItems(navMainAdmin);
   }, []);
 
-  console.log("User from token in AppSidebar:", user);
+  // console.log("User from token in AppSidebar:", user);
 
   const normalize = (url: string) => {
     if (!url) return "/";
@@ -48,21 +48,17 @@ export function AppSidebar({
     return withLeading !== "/" ? withLeading.replace(/\/+$/, "") : withLeading;
   };
 
-  const { isMobile, setOpenMobile } = useSidebar()
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const matchedNav = matchNavItem(pathname, searchParams);
   const activeHref = matchedNav ? normalize(matchedNav.url) : undefined;
 
   const handleNavClick = () => {
-    if (isMobile) setOpenMobile(false)
-  }
+    if (isMobile) setOpenMobile(false);
+  };
 
   return (
-    <Sidebar
-      collapsible="offcanvas"
-      {...props}
-      className={cn("border-r", className)}
-    >
+    <Sidebar collapsible="offcanvas" {...props} className={className}>
       <SidebarHeader>
         {/* <SidebarMenu>
           <SidebarMenuItem>

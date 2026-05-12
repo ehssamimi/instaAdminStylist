@@ -1,15 +1,9 @@
 import type { ComponentType, SVGProps } from "react"
-import { LayoutPanelLeft, ShieldEllipsis, LayoutDashboard, Package, Coins, FileText,
-   Calendar,
-  Star,
-  DollarSign,
-  Percent,
-  Medal,
-  Banknote,
-} from "lucide-react"
-import { CustomersNavIcon } from "@/components/customers-nav-icon"
-import { ReportsNavIcon } from "@/components/reports-nav-icon"
-import { StylistsNavIcon } from "@/components/stylists-nav-icon"
+import { FileText, Calendar, Star, Percent, Medal, Banknote } from "lucide-react"
+import { DashboardIcon } from "@/components/icons/dashboard-icon"
+import { CustomersNavIcon } from "@/components/icons/customers-nav-icon"
+import { ReportsNavIcon } from "@/components/icons/reports-nav-icon"
+import { StylistsNavIcon } from "@/components/icons/stylists-nav-icon"
 
 export interface NavMainItem {
   title: string
@@ -27,7 +21,7 @@ export const navMainAdmin: NavMainItem[] = [
     title: "Dashboard",
     pageTitle: "Dashboard",
     url: "/dashboard",
-    icon: LayoutPanelLeft,
+    icon: DashboardIcon,
   },
   {
     title: "Booking History",

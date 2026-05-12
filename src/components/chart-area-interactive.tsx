@@ -94,8 +94,8 @@ export function ChartAreaInteractive({
   }, [chartData]);
 
   return (
-    <Card className="@container/card shadow-none">
-      <div className="flex flex-col gap-3 px-6 ">
+    <Card className="@container/card shadow-none py-[12px]">
+      <div className="flex flex-col gap-3 px-4 ">
         <h3 className="text-base font-bold text-gray-900">Performance</h3>
         <div className="flex items-center justify-between">
           <ToggleGroup
@@ -139,45 +139,57 @@ export function ChartAreaInteractive({
           </ToggleGroup>
         </div>
       </div>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+      <CardContent className="px-4 ">
         {loading ? (
           <div className="h-[250px] animate-pulse rounded-xl bg-muted" />
         ) : (
           <ChartContainer
             config={chartConfig}
-            className="aspect-auto h-[250px] w-full [&_.recharts-cartesian-axis-tick_text]:!fill-gray-400"
+            className="aspect-auto h-[250px] w-full"
           >
-            <AreaChart data={chartData}>
+            <AreaChart
+              data={chartData}
+              margin={{ left: 0, top: 10, right: 10, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="fillValue" x1="0" y1="0" x2="0" y2="1">
                   <stop
-                    offset="5%"
+                    offset="0%"
                     stopColor="var(--color-value)"
-                    stopOpacity={0.1}
+                    stopOpacity={0.18}
                   />
                   <stop
-                    offset="95%"
+                    offset="80%"
                     stopColor="var(--color-value)"
-                    stopOpacity={0.0003}
+                    stopOpacity={0.04}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor="var(--color-value)"
+                    stopOpacity={0}
                   />
                 </linearGradient>
                 <filter
                   id="valueLineShadow"
                   x="-20%"
-                  y="-20%"
+                  y="-30%"
                   width="140%"
-                  height="140%"
+                  height="160%"
                 >
                   <feDropShadow
                     dx="0"
-                    dy="2"
-                    stdDeviation="2"
+                    dy="3"
+                    stdDeviation="4"
                     floodColor="#000000"
-                    floodOpacity="0.24"
+                    floodOpacity="0.12"
                   />
                 </filter>
               </defs>
-              <CartesianGrid vertical={false} />
+              <CartesianGrid
+                vertical={false}
+                stroke="#f0f0f0"
+                strokeDasharray="0"
+              />
               <XAxis
                 dataKey="date"
                 tickLine={false}
@@ -185,7 +197,12 @@ export function ChartAreaInteractive({
                 padding={{ left: 30, right: 10 }}
                 tickMargin={8}
                 minTickGap={32}
-                tick={{ fill: "var(--color-gray-400)", fontSize: 12 }}
+                tick={{
+                  fill: "#A4A7AE",
+                  fontSize: 12,
+                  fontFamily: "Satoshi",
+                  fontWeight: 400,
+                }}
                 tickFormatter={(value) => {
                   const date = new Date(value);
                   return date.toLocaleDateString("en-US", {
@@ -197,14 +214,15 @@ export function ChartAreaInteractive({
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                width={72}
-                tickMargin={14}
+                width={48}
+                tickMargin={4}
                 domain={[0, yMax]}
                 ticks={ticks}
                 tick={{
-                  fill: "var(--color-gray-400)",
+                  fill: "#A4A7AE",
                   fontSize: 12,
-                  width: 300,
+                  fontFamily: "Satoshi",
+                  fontWeight: 400,
                 }}
                 tickFormatter={(value) => `$${Number(value).toLocaleString()}`}
               />
@@ -225,24 +243,33 @@ export function ChartAreaInteractive({
               />
               <Area
                 dataKey="value"
-                type="linear"
+                type="monotone"
                 baseLine={0}
                 fill="url(#fillValue)"
                 fillOpacity={1}
-                stroke="#111111"
-                strokeWidth={allZeros ? 2 : 1.6}
+                stroke="#1a1a1a"
+                strokeWidth={allZeros ? 2 : 1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 filter="url(#valueLineShadow)"
+                animationDuration={700}
+                animationEasing="ease-out"
                 dot={
                   allZeros
                     ? {
-                        r: 2.5,
-                        stroke: "#111111",
-                        strokeWidth: 2,
-                        fill: "#111111",
+                        r: 3,
+                        stroke: "#1a1a1a",
+                        strokeWidth: 1.5,
+                        fill: "#ffffff",
                       }
                     : false
                 }
-                activeDot={{ r: 4 }}
+                activeDot={{
+                  r: 5,
+                  stroke: "#ffffff",
+                  strokeWidth: 2,
+                  fill: "#1a1a1a",
+                }}
               />
             </AreaChart>
           </ChartContainer>

@@ -2,6 +2,7 @@
 
 import { Mail } from "lucide-react";
 
+
 export type ProfileHeaderActivityItem = {
   label?: string;
   value?: string;
@@ -11,30 +12,10 @@ export type ProfileHeaderCardProps = {
   imageUrl?: string | null;
   displayName: string;
   email: string;
-  /** e.g. “Stylist Name” / “Customer Name” */
   nameFieldLabel?: string;
-  /** e.g. “Stylist Email” / “Customer Email” */
   emailFieldLabel?: string;
-  /** Defaults to two “No activity yet” placeholders if omitted */
   activities?: ProfileHeaderActivityItem[];
 };
-
-function ActivityMetricCard({
-  label = "No activity yet",
-  value = "—",
-}: {
-  label?: string;
-  value?: string;
-}) {
-  return (
-    <div className="flex min-h-[96px] w-[140px] flex-col rounded-xl border border-gray-100 bg-white p-3">
-      <p className="font-satoshi text-sm text-gray-900">{label}</p>
-      <p className="mt-auto font-satoshi text-[28px] font-bold text-neutral-black_03">
-        {value}
-      </p>
-    </div>
-  );
-}
 
 export function ProfileHeaderCard({
   imageUrl,
@@ -51,10 +32,10 @@ export function ProfileHeaderCard({
 
   return (
     <section className="mb-2 admin-panel-surface">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-4 sm:gap-y-3">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-10">
         {/* Profile info: photo + name + email */}
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-gray-100">
+        <div className="flex min-w-0 shrink-0 items-center gap-4">
+          <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-gray-100">
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={imageUrl} alt="" className="size-full object-cover" />
@@ -88,17 +69,20 @@ export function ProfileHeaderCard({
           </div>
         </div>
 
-        {/* Spacer: pushes cards to the right on the same row */}
-        <div className="hidden sm:block sm:flex-1" />
-
-        {/* Cards grouped so they always stay together and never split rows */}
-        <div className="flex gap-3">
+        {/* Stat cards */}
+        <div className="flex gap-4 lg:flex-1">
           {items.map((item, index) => (
-            <ActivityMetricCard
+            <div
               key={index}
-              label={item.label}
-              value={item.value}
-            />
+              className="flex h-[112px] flex-1 flex-col items-start justify-between rounded-[12px] border border-[#F5F5F5] bg-white p-4 shadow-panel"
+            >
+              <p className="font-satoshi text-sm text-gray-500">
+                {item.label ?? "No activity yet"}
+              </p>
+              <p className="font-satoshi text-[28px] font-bold text-neutral-black_03">
+                {item.value ?? "-"}
+              </p>
+            </div>
           ))}
         </div>
       </div>
