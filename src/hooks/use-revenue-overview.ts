@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { dashboardApi } from '@/lib/api'
 import {
-  revenueTabToApiRange,
   type RevenueRangeModel,
 } from '@/lib/revenue-dashboard'
 import type { RevenueTimeRange } from '@/models/dashboardOverview'
+import type { DashboardOverviewRange } from '@/models/adminDashboard'
 
 export function useRevenueOverview(activeRange: RevenueTimeRange) {
   const [model, setModel] = useState<RevenueRangeModel | null>(null)
@@ -22,7 +22,7 @@ export function useRevenueOverview(activeRange: RevenueTimeRange) {
       setError(null)
       try {
         const response = await dashboardApi.getRevenueOverview({
-          range: revenueTabToApiRange(activeRange),
+          range: activeRange as DashboardOverviewRange,
         })
         if (!cancelled && response.success) {
           setModel(response.data)
