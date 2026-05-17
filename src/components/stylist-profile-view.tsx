@@ -198,7 +198,7 @@ function buildStylingInfoValues(
     location: show(stylist.location),
     linkedInUrl: show(stylist.linkedInUrl),
     tiktokHandle: show(stylist.tiktokHandle),
-    instagramOrFacebook: show(stylist.instagramOrFacebook),
+    instagramOrFacebook: show(stylist.instagramHandle ?? stylist.facebookHandle),
     yearsExperience: displayExperienceDetail(stylist),
     website: show(stylist.website),
     specialityTags: sp.specialityTags,

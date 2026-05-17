@@ -83,7 +83,7 @@ function buildFormValues(stylist: StylistDetailDto): StylingInfoFormValues {
     location: show(stylist.location),
     linkedInUrl: show(stylist.linkedInUrl),
     tiktokHandle: show(stylist.tiktokHandle),
-    instagramOrFacebook: show(stylist.instagramOrFacebook),
+    instagramOrFacebook: show(stylist.instagramHandle ?? stylist.facebookHandle),
     yearsExperience: show(stylist.experience),
     website: show(stylist.website),
     specialityTags: stylist.specialityTags ?? [],
