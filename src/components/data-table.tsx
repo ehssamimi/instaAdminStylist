@@ -15,7 +15,7 @@ import {
   type DragEndEvent,
   type UniqueIdentifier,
 } from "@dnd-kit/core"
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
+import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers"
 import {
   arrayMove,
   SortableContext,
@@ -52,7 +52,6 @@ import {
   VisibilityState,
 } from "@tanstack/react-table"
 
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -281,7 +280,7 @@ export function DataTable({
           ) : (
             <DndContext
               collisionDetection={closestCenter}
-              modifiers={[restrictToVerticalAxis]}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
               onDragEnd={handleDragEnd}
               sensors={sensors}
               id={sortableId}
@@ -380,15 +379,32 @@ export function DataTable({
             </DndContext>
           )}
         </div>
-        {shouldShowPagination && (
-          <div className="flex items-center justify-between px-4">
-            <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-              {/* {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected. */}
-            </div>
-            <div className="flex w-full items-center gap-8 lg:w-fit">
-              <div className="hidden items-center gap-2 lg:flex">
-                <Label htmlFor="rows-per-page" className="text-sm font-medium">
+        {shouldShowPagination && (() => {
+          const pgIndex = serverPagination
+            ? (currentPage ?? 1) - 1
+            : table.getState().pagination.pageIndex
+          const pgSize = serverPagination
+            ? (externalPageSize ?? 10)
+            : table.getState().pagination.pageSize
+          const rowTotal = serverPagination
+            ? (totalItemCount ?? effectivePageCount * (externalPageSize ?? 10))
+            : filteredRowCount
+          const rowFrom = pgIndex * pgSize + 1
+          const rowTo = Math.min((pgIndex + 1) * pgSize, rowTotal)
+
+          const navBtnClass =
+            "flex h-8 w-8 items-center justify-center text-gray-500 transition-colors " +
+            "hover:bg-muted hover:text-gray-900 " +
+            "disabled:pointer-events-none disabled:opacity-35"
+
+          return (
+            <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
+              {/* Rows per page — desktop only */}
+              <div className="hidden sm:flex items-center gap-2">
+                <Label
+                  htmlFor="rows-per-page"
+                  className="text-sm text-muted-foreground whitespace-nowrap"
+                >
                   Rows per page
                 </Label>
                 <Select
@@ -402,68 +418,68 @@ export function DataTable({
                   }}
                   disabled={isLoading}
                 >
-                  <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                    <SelectValue
-                      placeholder={table.getState().pagination.pageSize}
-                    />
+                  <SelectTrigger size="sm" className="h-8 w-20" id="rows-per-page">
+                    <SelectValue placeholder={table.getState().pagination.pageSize} />
                   </SelectTrigger>
                   <SelectContent side="top">
-                    {[10, 20, 30, 40, 50].map((pageSize) => (
-                      <SelectItem key={pageSize} value={`${pageSize}`}>
-                        {pageSize}
-                      </SelectItem>
+                    {[10, 20, 30, 40, 50].map((ps) => (
+                      <SelectItem key={ps} value={`${ps}`}>{ps}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex w-fit items-center justify-center text-sm font-medium">
-                Page {table.getState().pagination.pageIndex + 1} of{" "}
-                {table.getPageCount()}
-              </div>
-              <div className="ml-auto flex items-center gap-2 lg:ml-0">
-                <Button
-                  variant="outline"
-                  className="hidden h-8 w-8 p-0 lg:flex"
-                  onClick={() => table.setPageIndex(0)}
-                  disabled={!table.getCanPreviousPage() || isLoading}
-                >
-                  <span className="sr-only">Go to first page</span>
-                  <IconChevronsLeft />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="size-8"
-                  size="icon"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage() || isLoading}
-                >
-                  <span className="sr-only">Go to previous page</span>
-                  <IconChevronLeft />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="size-8"
-                  size="icon"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage() || isLoading}
-                >
-                  <span className="sr-only">Go to next page</span>
-                  <IconChevronRight />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="hidden size-8 lg:flex"
-                  size="icon"
-                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                  disabled={!table.getCanNextPage() || isLoading}
-                >
-                  <span className="sr-only">Go to last page</span>
-                  <IconChevronsRight />
-                </Button>
+
+              {/* Row range + navigation */}
+              <div className="flex items-center justify-between sm:justify-end gap-4">
+                <span className="text-sm tabular-nums text-muted-foreground">
+                  {rowFrom}–{rowTo} of {rowTotal}
+                </span>
+
+                <div className="flex items-center overflow-hidden rounded-lg gap-2 md:gap-8 ">
+                  {/* First — desktop only */}
+                  <button
+                    className={`${navBtnClass} hidden sm:flex`}
+                    onClick={() => table.setPageIndex(0)}
+                    disabled={!table.getCanPreviousPage() || !!isLoading}
+                    aria-label="Go to first page"
+                  >
+                    <IconChevronsLeft className="size-4" />
+                  </button>
+
+                  {/* Previous */}
+                  <button
+                    className={navBtnClass}
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage() || !!isLoading}
+                    aria-label="Go to previous page"
+                  >
+                    <IconChevronLeft className="size-4" />
+                  </button>
+
+                  {/* Next */}
+                  <button
+                    className={navBtnClass}
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage() || !!isLoading}
+                    aria-label="Go to next page"
+                  >
+                    <IconChevronRight className="size-4" />
+                  </button>
+
+                  {/* Last — desktop only */}
+                  <button
+                    className={`${navBtnClass} hidden sm:flex`}
+                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                    disabled={!table.getCanNextPage() || !!isLoading}
+                    aria-label="Go to last page"
+                  >
+                    <IconChevronsRight className="size-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )

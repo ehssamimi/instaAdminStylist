@@ -37,6 +37,7 @@ export function mapFeaturedStylistToRow(
   const { first_name, last_name } = parseName(item.name)
   return {
     id: item.id,
+    stylistId: item.stylistId,
     profile_picture: item.profilePicture ?? null,
     first_name,
     last_name,

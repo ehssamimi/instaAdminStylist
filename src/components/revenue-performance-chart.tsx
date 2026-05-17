@@ -66,53 +66,56 @@ export function RevenuePerformanceChart({
           <defs>
             <linearGradient id={fillGradientId} x1="0" y1="0" x2="0" y2="1">
               <stop
-                offset="1%"
+                offset="0%"
                 stopColor="var(--color-sales)"
-                stopOpacity={0.1}
+                stopOpacity={0.18}
               />
               <stop
-                offset="60%"
+                offset="80%"
                 stopColor="var(--color-sales)"
-                stopOpacity={0.0003}
+                stopOpacity={0.04}
+              />
+              <stop
+                offset="100%"
+                stopColor="var(--color-sales)"
+                stopOpacity={0}
               />
             </linearGradient>
             <filter
               id={lineShadowFilterId}
               x="-20%"
-              y="-20%"
+              y="-30%"
               width="140%"
-              height="140%"
+              height="160%"
             >
               <feDropShadow
                 dx="0"
-                dy="2"
-                stdDeviation="2"
+                dy="3"
+                stdDeviation="4"
                 floodColor="#000000"
-                floodOpacity="0.24"
+                floodOpacity="0.12"
               />
             </filter>
           </defs>
-          <CartesianGrid vertical={false} />
+          <CartesianGrid vertical={false} stroke="#f0f0f0" strokeDasharray="0" />
           <XAxis
             dataKey="date"
             tickLine={false}
             axisLine={false}
-            tickMargin={10}
-            minTickGap={24}
-            angle={-35}
-            textAnchor="end"
-            height={56}
-            tick={{ fill: "var(--color-gray-400)", fontSize: 11 }}
+            padding={{ left: 30, right: 10 }}
+            tickMargin={8}
+            minTickGap={32}
+            tick={{ fill: "#A4A7AE", fontSize: 12, fontFamily: "Satoshi", fontWeight: 400 }}
             tickFormatter={formatTickDate}
           />
           <YAxis
             tickLine={false}
             axisLine={false}
-            width={56}
-            tickMargin={8}
+            width={48}
+            tickMargin={4}
             domain={[0, yMax]}
             ticks={yTicks}
-            tick={{ fill: "var(--color-gray-400)", fontSize: 12 }}
+            tick={{ fill: "#A4A7AE", fontSize: 12, fontFamily: "Satoshi", fontWeight: 400 }}
             tickFormatter={(v) => `$${Number(v).toLocaleString()}`}
           />
           <ChartTooltip
@@ -129,12 +132,22 @@ export function RevenuePerformanceChart({
           />
           <Area
             dataKey="sales"
-            type="linear"
+            type="monotone"
             fill={`url(#${fillGradientId})`}
             fillOpacity={1}
-            stroke="#111111"
-            strokeWidth={1.6}
+            stroke="#1a1a1a"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
             filter={`url(#${lineShadowFilterId})`}
+            animationDuration={700}
+            animationEasing="ease-out"
+            activeDot={{
+              r: 5,
+              stroke: "#ffffff",
+              strokeWidth: 2,
+              fill: "#1a1a1a",
+            }}
           />
         </AreaChart>
       </ChartContainer>

@@ -33,7 +33,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 <SidebarInset>
                   <div className="flex min-h-0 flex-1 flex-col">
                     <div className="@container/main flex min-h-0 flex-1 flex-col gap-2 bg-bg-main">
-                      <div className="p-4 md:p-10">
+                      <div className="p-4 pt-8 md:p-10">
                         {children}
                       </div>
                     </div>

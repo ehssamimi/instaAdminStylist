@@ -30,7 +30,7 @@ type TabValue = keyof typeof tabToStatus
 
 const tabLabels: Record<TabValue, string> = {
   "to-review": "Reports to Review",
-  removed: "Removed Users",
+  removed: "Blocked Users",
   ignored: "Ignored Reports",
 }
 
@@ -158,7 +158,7 @@ export default function ReportsPage() {
                       })
                     }}
                   >
-                    Remove User
+                    Block User
                   </ReportTableActionButton>
                 </div>
               ) : null}
@@ -235,7 +235,7 @@ export default function ReportsPage() {
             confirmAction.type === "ignore"
               ? "Ignore this report?"
               : confirmAction.type === "remove"
-                ? "Remove user?"
+                ? "Block user?"
                 : confirmAction.type === "reopen"
                   ? "Reopen this report?"
                   : "Restore user?"
@@ -244,7 +244,7 @@ export default function ReportsPage() {
             confirmAction.type === "ignore"
               ? "The report will be marked as ignored and no further action will be taken."
               : confirmAction.type === "remove"
-                ? `This will suspend ${confirmAction.row.reported_user} and mark the report as removed.`
+                ? `This will suspend ${confirmAction.row.reported_user} and mark the report as Blocked.`
                 : confirmAction.type === "reopen"
                   ? "The report will return to open status for review."
                   : `This will restore ${confirmAction.row.reported_user} and set the report back to open.`
@@ -253,7 +253,7 @@ export default function ReportsPage() {
             confirmAction.type === "ignore"
               ? "Ignore report"
               : confirmAction.type === "remove"
-                ? "Remove user"
+                ? "Block user"
                 : confirmAction.type === "reopen"
                   ? "Reopen report"
                   : "Restore user"

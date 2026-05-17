@@ -1,44 +1,18 @@
-import type { DashboardOverviewRange } from "@/models/adminDashboard"
 import type { RevenueTimeRange } from "@/models/dashboardOverview"
 
 export type { RevenueRangeModel } from "@/models/revenueOverview"
 
-/** Tab labels aligned with the revenue dashboard design. */
 export const REVENUE_RANGE_TAB_LABELS: Record<RevenueTimeRange, string> = {
   "7d": "Past Week",
-  "90d": "Past 3 Months",
-  "180d": "Past 6 Months",
-  "365d": "Past Year",
+  "30d": "Past 30 Days",
+  "6m": "Past 6 Months",
 }
 
-export const REVENUE_TAB_ORDER: RevenueTimeRange[] = [
-  "7d",
-  "90d",
-  "180d",
-  "365d",
-]
-
-/** Map revenue UI tab keys to admin API `range` query values (same as dashboard home). */
-export function revenueTabToApiRange(tab: RevenueTimeRange): DashboardOverviewRange {
-  switch (tab) {
-    case "7d":
-      return "past_week"
-    case "90d":
-      return "3m"
-    case "180d":
-      return "6m"
-    case "365d":
-      return "1y"
-    default: {
-      const _exhaustive: never = tab
-      return _exhaustive
-    }
-  }
-}
+export const REVENUE_TAB_ORDER: RevenueTimeRange[] = ["7d", "30d", "6m"]
 
 /**
- * `/api/admin/revenue` expects `range=week` for the short window; `/api/admin/dashboard`
- * uses `past_week`. Translate when calling the revenue endpoint only.
+ * `/api/admin/revenue` expects `range=week` for the short window.
+ * Retained for the revenue API route proxy; not used by the revenue page.
  */
 export function revenueQueryParamForBackend(
   range: string | null | undefined

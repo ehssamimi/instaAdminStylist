@@ -86,7 +86,7 @@ export function AppSidebar({
                       asChild
                       tooltip={item.title}
                       isActive={isActive}
-                      className="gap-3 py-6 font-normal !text-gray-500 data-[active=true]:!font-medium data-[active=true]:!text-neutral-black_03 [&>svg]:!size-6"
+                      className="gap-3 py-6 font-normal !text-gray-500 data-[active=true]:!font-bold data-[active=true]:!text-neutral-black_03 [&>svg]:!size-6 data-[active=true]:[&>svg]:[stroke-width:2.5]"
                     >
                       <Link href={href} prefetch onClick={handleNavClick}>
                         {item.icon && <item.icon />}

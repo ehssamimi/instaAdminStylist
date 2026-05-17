@@ -522,7 +522,7 @@ export const stylistsApi = {
    * `PUT /api/admin/featured-stylists/:id/order` with `{ order }` (1-based).
    */
   updateFeaturedOrder: async (id: string, order: number) => {
-    return api.put<unknown>(
+    return api.put<{ success: boolean; message: string }>(
       `/admin/featured-stylists/${encodeURIComponent(id)}/order`,
       { order }
     );

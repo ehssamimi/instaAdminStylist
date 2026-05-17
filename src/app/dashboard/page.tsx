@@ -40,10 +40,18 @@ export default function Page() {
           totalResponses={data.totalResponses}
           range={range}
           onRangeChange={setRange}
-          loading={loading}
+          loading={loading || perfLoading}
         />
       ) : loading ? (
-        <div className="h-[280px] animate-pulse rounded-xl bg-muted" />
+        <div className="rounded-2xl border border-border bg-white shadow-none">
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="h-5 w-48 animate-pulse rounded-md bg-muted" />
+            <div className="h-8 w-44 animate-pulse rounded-md bg-muted" />
+          </div>
+          <div className="px-4 pb-4">
+            <div className="h-[280px] animate-pulse rounded-xl bg-muted" />
+          </div>
+        </div>
       ) : null}
     </div>
   )

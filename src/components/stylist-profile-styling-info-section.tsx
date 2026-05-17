@@ -8,8 +8,15 @@ import {
 
 import { EachContainer } from "@/components/each-container"
 import { FormItemYearsExperience } from "@/components/form-item-years-experience"
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form"
 import { FormItemInput } from "@/components/ui/form-item-input"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -36,17 +43,74 @@ const selectItemClass = cn(
   "data-[state=checked]:border-brand-600/40 data-[state=checked]:bg-[#f7f4ef] data-[state=checked]:font-bold data-[state=checked]:text-brown-700"
 )
 
+const COUNTRY_CODES: { value: string; label: string }[] = [
+  { value: "+1",    label: "US +1" },
+  { value: "+1CA",  label: "CA +1" },
+  { value: "+52",   label: "MX +52" },
+  { value: "+54",   label: "AR +54" },
+  { value: "+55",   label: "BR +55" },
+  { value: "+56",   label: "CL +56" },
+  { value: "+57",   label: "CO +57" },
+  { value: "+51",   label: "PE +51" },
+  { value: "+44",   label: "GB +44" },
+  { value: "+49",   label: "DE +49" },
+  { value: "+33",   label: "FR +33" },
+  { value: "+39",   label: "IT +39" },
+  { value: "+34",   label: "ES +34" },
+  { value: "+31",   label: "NL +31" },
+  { value: "+32",   label: "BE +32" },
+  { value: "+41",   label: "CH +41" },
+  { value: "+43",   label: "AT +43" },
+  { value: "+46",   label: "SE +46" },
+  { value: "+47",   label: "NO +47" },
+  { value: "+45",   label: "DK +45" },
+  { value: "+358",  label: "FI +358" },
+  { value: "+353",  label: "IE +353" },
+  { value: "+351",  label: "PT +351" },
+  { value: "+30",   label: "GR +30" },
+  { value: "+48",   label: "PL +48" },
+  { value: "+61",   label: "AU +61" },
+  { value: "+64",   label: "NZ +64" },
+  { value: "+81",   label: "JP +81" },
+  { value: "+82",   label: "KR +82" },
+  { value: "+86",   label: "CN +86" },
+  { value: "+91",   label: "IN +91" },
+  { value: "+65",   label: "SG +65" },
+  { value: "+852",  label: "HK +852" },
+  { value: "+886",  label: "TW +886" },
+  { value: "+66",   label: "TH +66" },
+  { value: "+60",   label: "MY +60" },
+  { value: "+62",   label: "ID +62" },
+  { value: "+63",   label: "PH +63" },
+  { value: "+84",   label: "VN +84" },
+  { value: "+27",   label: "ZA +27" },
+  { value: "+234",  label: "NG +234" },
+  { value: "+20",   label: "EG +20" },
+  { value: "+971",  label: "AE +971" },
+  { value: "+966",  label: "SA +966" },
+  { value: "+972",  label: "IL +972" },
+  { value: "+90",   label: "TR +90" },
+  { value: "+7",    label: "RU +7" },
+]
+
+/** Strip the CA suffix used to deduplicate Canada from the stored value before submitting. */
+export function normaliseCountryCode(v: string): string {
+  return v === "+1CA" ? "+1" : v
+}
+
 /** Shared "Styling Info" fields for stylist profile forms (dashboard + applications). */
 export type StylistProfileStylingInfoFormValues = {
   fullName: string
   email: string
-  phone: string
+  countryCode: string
+  phoneNumber: string
   gender: string
   businessName: string
   location: string
   linkedInUrl: string
   tiktokHandle: string
-  instagramOrFacebook: string
+  instagramHandle: string
+  facebookHandle: string
   yearsExperience: string
   website: string
 }
@@ -76,6 +140,85 @@ function StylingInfoField<T extends FieldValues>({
           {...field}
           disabled={disabled}
         />
+      )}
+    />
+  )
+}
+
+function PhoneField<T extends FieldValues>({
+  control,
+  countryCodeName,
+  phoneNumberName,
+  disabled = false,
+}: {
+  control: Control<T>
+  countryCodeName: FieldPath<T>
+  phoneNumberName: FieldPath<T>
+  disabled?: boolean
+}) {
+  return (
+    <FormField
+      control={control}
+      name={phoneNumberName}
+      render={({ field, fieldState }) => (
+        <FormItem className="gap-1.5">
+          <FormLabel className="text-sm font-medium text-text-main">
+            Phone number
+          </FormLabel>
+          <div
+            className={cn(
+              "flex h-10 overflow-hidden rounded-lg border bg-surface shadow-form-field",
+              "transition-[color,box-shadow,border-color]",
+              fieldState.error ? "border-destructive" : "border-gray-300",
+              !disabled &&
+                "focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20",
+              disabled && "opacity-70"
+            )}
+          >
+            {/* Country code dropdown */}
+            <FormField
+              control={control}
+              name={countryCodeName}
+              render={({ field: ccField }) => (
+                <Select
+                  disabled={disabled}
+                  value={(ccField.value as string) || "+1"}
+                  onValueChange={ccField.onChange}
+                >
+                  <SelectTrigger className="!h-full w-auto min-w-[80px] shrink-0 rounded-none border-0 border-r border-gray-200 bg-transparent px-3 text-sm shadow-none focus:ring-0 focus-visible:ring-0 font-satoshi text-gray-600">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[148px] rounded-lg border-gray-200 bg-white p-1 shadow-lg">
+                    {COUNTRY_CODES.map((c) => (
+                      <SelectItem
+                        key={c.value}
+                        value={c.value}
+                        className="cursor-pointer rounded-md py-1.5 text-sm font-satoshi"
+                      >
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {/* Phone number input */}
+            <FormControl>
+              <Input
+                {...field}
+                disabled={disabled}
+                placeholder="(555) 000-0000"
+                className={cn(
+                  "h-full flex-1 rounded-none border-0 bg-transparent shadow-none",
+                  "focus-visible:ring-0 focus-visible:border-0",
+                  "font-satoshi text-sm text-gray-700 placeholder:text-gray-400",
+                  disabled && "cursor-not-allowed"
+                )}
+              />
+            </FormControl>
+          </div>
+          <FormMessage />
+        </FormItem>
       )}
     />
   )
@@ -153,10 +296,10 @@ export function StylistProfileStylingInfoSection<
           label="Email"
           disabled={disabled}
         />
-        <StylingInfoField
+        <PhoneField
           control={control}
-          name={"phone" as FieldPath<T>}
-          label="Phone"
+          countryCodeName={"countryCode" as FieldPath<T>}
+          phoneNumberName={"phoneNumber" as FieldPath<T>}
           disabled={disabled}
         />
         {genderOptions && genderOptions.length > 0 ? (
@@ -200,8 +343,14 @@ export function StylistProfileStylingInfoSection<
         />
         <StylingInfoField
           control={control}
-          name={"instagramOrFacebook" as FieldPath<T>}
-          label="Instagram or Facebook Handle"
+          name={"instagramHandle" as FieldPath<T>}
+          label="Instagram Handle"
+          disabled={disabled}
+        />
+        <StylingInfoField
+          control={control}
+          name={"facebookHandle" as FieldPath<T>}
+          label="Facebook Handle"
           disabled={disabled}
         />
         <FormItemYearsExperience

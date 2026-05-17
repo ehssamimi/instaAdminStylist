@@ -44,6 +44,8 @@ export type StylistDetailsApiDto = {
 
 export interface StylistRowDto {
   id: string
+  /** Present only for featured-stylist rows; the underlying stylist's own ID. */
+  stylistId?: string
   profile_picture: string | null
   first_name: string
   last_name: string
@@ -57,13 +59,15 @@ export interface StylistRowDto {
 
 export interface StylistDetailDto extends StylistRowDto {
   email: string
+  countryCode?: string | null
   phoneNumber?: string | null
   gender: string | null
   businessName: string | null
   location: string | null
   linkedInUrl: string | null
   tiktokHandle: string | null
-  instagramOrFacebook: string | null
+  instagramHandle: string | null
+  facebookHandle: string | null
   experience: string | null
   website: string | null
   bio: string | null
@@ -234,15 +238,6 @@ function formatDetailTotalRevenue(raw: StylistDetailsApiDto): string {
   return s ?? '—'
 }
 
-function pickInstagramOrFacebookHandle(raw: StylistDetailsApiDto): string | null {
-  return (
-    coalesceStr(raw.instagramHandle) ??
-    coalesceStr(raw.facebookHandle) ??
-    coalesceStr(raw.instagramOrFacebook) ??
-    coalesceStr(raw.tiktokHandle)
-  )
-}
-
 export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDetailDto {
   const first =
     coalesceStr(raw.firstName) ?? coalesceStr(raw.first_name) ?? ''
@@ -271,18 +266,15 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
     avg_weekly_availability: '—',
     avg_weekly_drop_in: '—',
     email: coalesceStr(raw.email) ?? '',
-    phoneNumber: (() => {
-      const cc = coalesceStr(raw.countryCode)
-      const num = coalesceStr(raw.phoneNumber)
-      if (!num) return null
-      return cc ? `${cc}${num}` : num
-    })(),
+    countryCode: coalesceStr(raw.countryCode) ?? null,
+    phoneNumber: coalesceStr(raw.phoneNumber) ?? null,
     gender: raw.gender ?? null,
     businessName: raw.businessName ?? null,
     location: raw.location ?? null,
     linkedInUrl: raw.linkedInUrl ?? null,
     tiktokHandle: coalesceStr(raw.tiktokHandle),
-    instagramOrFacebook: pickInstagramOrFacebookHandle(raw),
+    instagramHandle: coalesceStr(raw.instagramHandle) ?? coalesceStr(raw.instagramOrFacebook) ?? null,
+    facebookHandle: coalesceStr(raw.facebookHandle) ?? null,
     experience: stringifyExperience(raw.experience),
     website: raw.website ?? null,
     bio: raw.bio ?? null,

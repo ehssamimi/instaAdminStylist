@@ -38,7 +38,7 @@ function shouldSkipRefresh(url: string | undefined): boolean {
 /** No auth interceptors — used only for refresh to avoid recursion */
 const refreshClient = axios.create({
   baseURL: "/api",
-  timeout: 10000,
+  timeout: 30000,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -59,7 +59,7 @@ function processQueue(error: unknown, token: string | null) {
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: "/api",
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },

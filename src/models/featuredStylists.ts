@@ -10,6 +10,7 @@ export interface FeaturedStylistListMetadata {
 
 export interface FeaturedStylistApiItem {
   id: string
+  stylistId: string
   name: string
   profilePicture: string | null
   rating: number

@@ -59,13 +59,11 @@ function withBarFills(data: ReferralSourceDatum[]): (ReferralSourceDatum & {
   }));
 }
 
-/** Tabs: straight underline via inset shadow (avoids rounded-corner “hook” from border-b on ToggleGroupItem). */
 const rangeToggleItemClassName =
-  "rounded-none first:rounded-none last:rounded-none border-0 bg-transparent px-4 py-7 shadow-none " +
-  "hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 " +
-  "data-[state=on]:bg-transparent " +
-  "data-[state=off]:text-muted-foreground data-[state=on]:text-brand-700 data-[state=on]:font-bold " +
-  "data-[state=on]:shadow-[inset_0_-2px_0_0_var(--color-brand-700)]";
+  "rounded-[8px] first:rounded-[8px] last:rounded-[8px] border-0 px-3 py-2 text-[11px] font-bold shadow-none " +
+  "hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 " +
+  "data-[state=off]:bg-transparent data-[state=off]:text-[#A4A7AE] " +
+  "data-[state=on]:bg-white data-[state=on]:border data-[state=on]:border-[#E9EAEB] data-[state=on]:text-[#414651]";
 
 const RANGE_OPTIONS: { value: DashboardOverviewRange; label: string }[] = [
   { value: "past_week", label: "Past Week" },
@@ -128,7 +126,7 @@ export function ChartReferralSources({
             }}
             variant="default"
             disabled={loading}
-            className="hidden @[767px]/card:flex @[767px]/card:gap-0 @[767px]/card:rounded-none @[767px]/card:bg-transparent @[767px]/card:shadow-none"
+            className="hidden @[767px]/card:flex gap-1 rounded-[8px] border border-[#E9EAEB] bg-[#F5F5F5] p-0 shadow-none"
           >
             {RANGE_OPTIONS.map((o) => (
               <ToggleGroupItem
@@ -169,46 +167,50 @@ export function ChartReferralSources({
         </div>
       </CardHeader>
       <CardContent className="pt-2 px-3">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[280px] w-full"
-        >
-          <BarChart
-            data={chartData}
-            margin={{ top: 28, right: 8, left: 8, bottom: 0 }}
-            barCategoryGap="10%"
+        {loading ? (
+          <div className="h-[280px] animate-pulse rounded-xl bg-muted" />
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[280px] w-full"
           >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={isDesktop ? 8 : 4}
-              interval={0}
-              height={isDesktop ? 32 : 64}
-              angle={isDesktop ? 0 : -35}
-              textAnchor={isDesktop ? "middle" : "end"}
-              tick={{ fontSize: 12, fill: "#A4A7AE", fontFamily: "Satoshi", fontWeight: 400 }}
-            />
-            <YAxis hide domain={[0, "dataMax"]} />
-            <ChartTooltip
-              cursor={{ fill: "hsl(var(--muted) / 0.35)" }}
-              content={<ChartTooltipContent hideIndicator />}
-            />
-            <Bar dataKey="count" radius={[2, 2, 0, 0]} maxBarSize={112}>
-              <LabelList
-                dataKey="count"
-                position="top"
-                offset={12}
-                className="fill-muted-foreground text-[16px] font-medium"
-                formatter={(v: number) => v.toLocaleString()}
+            <BarChart
+              data={chartData}
+              margin={{ top: 28, right: 8, left: 8, bottom: 0 }}
+              barCategoryGap="10%"
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={isDesktop ? 8 : 4}
+                interval={0}
+                height={isDesktop ? 32 : 64}
+                angle={isDesktop ? 0 : -35}
+                textAnchor={isDesktop ? "middle" : "end"}
+                tick={{ fontSize: 12, fill: "#A4A7AE", fontFamily: "Satoshi", fontWeight: 400 }}
               />
-              {chartData.map((entry, i) => (
-                <Cell key={`${entry.label}-${i}`} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ChartContainer>
+              <YAxis hide domain={[0, "dataMax"]} />
+              <ChartTooltip
+                cursor={{ fill: "hsl(var(--muted) / 0.35)" }}
+                content={<ChartTooltipContent hideIndicator />}
+              />
+              <Bar dataKey="count" radius={[2, 2, 0, 0]} maxBarSize={112}>
+                <LabelList
+                  dataKey="count"
+                  position="top"
+                  offset={12}
+                  className="fill-muted-foreground text-[16px] font-medium"
+                  formatter={(v: number) => v.toLocaleString()}
+                />
+                {chartData.map((entry, i) => (
+                  <Cell key={`${entry.label}-${i}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );

@@ -121,7 +121,13 @@ export function FeaturedStylistsTable() {
       const order = (page - 1) * perPage + dragged.newIndex + 1
       void (async () => {
         try {
-          await stylistsApi.updateFeaturedOrder(stylistId, order)
+          const res = await stylistsApi.updateFeaturedOrder(stylistId, order)
+          if (res.success) {
+            toast.success(res.message)
+          } else {
+            toast.error(res.message)
+            await refetch()
+          }
         } catch (e) {
           toast.error(getApiErrorMessage(e))
           await refetch()
@@ -138,7 +144,7 @@ export function FeaturedStylistsTable() {
         .filter(Boolean)
         .join(' ')
         .trim() || 'Stylist'
-      setRemoveTarget({ id: row.id, displayName })
+      setRemoveTarget({ id: row.stylistId ?? row.id, displayName })
     },
     []
   )

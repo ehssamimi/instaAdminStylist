@@ -8,6 +8,7 @@ import { CircleX } from "lucide-react";
 import { EachContainer } from "@/components/each-container";
 import {
   StylistProfileStylingInfoSection,
+  normaliseCountryCode,
   type StylistProfileStylingInfoFormValues,
 } from "@/components/stylist-profile-styling-info-section";
 import { PageBackHeading } from "@/components/page-back-heading";
@@ -40,13 +41,15 @@ type StylingInfoFormValues = StylistProfileStylingInfoFormValues & {
 const STYLING_INFO_DEFAULTS: StylingInfoFormValues = {
   fullName: "",
   email: "",
-  phone: "",
+  countryCode: "+1",
+  phoneNumber: "",
   gender: "",
   businessName: "",
   location: "",
   linkedInUrl: "",
   tiktokHandle: "",
-  instagramOrFacebook: "",
+  instagramHandle: "",
+  facebookHandle: "",
   yearsExperience: "",
   website: "",
   specialityTags: [],
@@ -202,19 +205,6 @@ function appendIfValue(fd: FormData, key: string, value: string | undefined) {
   }
 }
 
-function appendPhone(fd: FormData, raw: string | undefined) {
-  const t = raw?.trim() ?? ""
-  if (!t || isEmptyDisplayValue(t)) return
-  if (t.startsWith("+")) {
-    const m = t.match(/^(\+\d{1,3})[\s\-]?(.+)$/)
-    if (m) {
-      fd.append("countryCode", m[1])
-      fd.append("phoneNumber", m[2].trim())
-      return
-    }
-  }
-  fd.append("phoneNumber", t)
-}
 
 function buildStylistUpdateFormData(
   values: StylingInfoFormValues,
@@ -225,13 +215,15 @@ function buildStylistUpdateFormData(
 
   appendIfValue(fd, "fullName", values.fullName);
   appendIfValue(fd, "email", values.email);
-  appendPhone(fd, values.phone);
+  appendIfValue(fd, "countryCode", normaliseCountryCode(values.countryCode));
+  appendIfValue(fd, "phoneNumber", values.phoneNumber);
   appendIfValue(fd, "gender", values.gender);
   appendIfValue(fd, "businessName", values.businessName);
   appendIfValue(fd, "location", values.location);
   appendIfValue(fd, "linkedInUrl", values.linkedInUrl);
   appendIfValue(fd, "tiktokHandle", values.tiktokHandle);
-  appendIfValue(fd, "instagramHandle", values.instagramOrFacebook);
+  appendIfValue(fd, "instagramHandle", values.instagramHandle);
+  appendIfValue(fd, "facebookHandle", values.facebookHandle);
   appendIfValue(fd, "website", values.website);
   appendIfValue(fd, "experience", values.yearsExperience);
 
@@ -317,13 +309,15 @@ function buildStylingInfoValues(
   return {
     fullName: displayNameFromDetail(stylist),
     email: show(stylist.email),
-    phone: show(stylist.phoneNumber),
+    countryCode: stylist.countryCode ?? "+1",
+    phoneNumber: show(stylist.phoneNumber),
     gender: stylist.gender?.trim().toLowerCase() ?? "",
     businessName: show(stylist.businessName),
     location: show(stylist.location),
     linkedInUrl: show(stylist.linkedInUrl),
     tiktokHandle: show(stylist.tiktokHandle),
-    instagramOrFacebook: show(stylist.instagramOrFacebook),
+    instagramHandle: show(stylist.instagramHandle),
+    facebookHandle: show(stylist.facebookHandle),
     yearsExperience: resolveExperienceOptionId(stylist.experience, experienceOpts),
     website: show(stylist.website),
     specialityTags: sp.specialityTags,
@@ -370,7 +364,7 @@ function StylingSpecialityTagGrid({
                     disabled={disabled}
                     aria-pressed={isOn}
                     className={cn(
-                      "flex h-[54px] w-full cursor-pointer items-center justify-center rounded-lg   border-solid bg-white px-0 py-3 text-center font-satoshi font-bold shadow-form-field transition-[color,border-color] select-none",
+                      "flex w-full cursor-pointer items-center justify-center rounded-lg border border-solid bg-white px-5 py-3 text-center font-satoshi text-base font-bold   transition-[color,border-color] select-none",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25",
                       "disabled:cursor-not-allowed disabled:opacity-60",
                       isOn

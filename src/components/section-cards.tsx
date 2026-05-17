@@ -8,36 +8,32 @@ type SectionCardsProps = {
   loading?: boolean
 }
 
+const loadingSkeleton = (
+  <span className="block h-9 w-24 animate-pulse rounded-md bg-muted" />
+)
+
 export function SectionCards({ stats, loading = false }: SectionCardsProps) {
   return (
     <div className="grid grid-cols-1 gap-[10px] @xl/main:grid-cols-4">
       <DashboardStatCard
         label="Bookings Today"
-        value={
-          loading ? '...' : stats.bookingsToday.toLocaleString()
-        }
+        value={loading ? loadingSkeleton : stats.bookingsToday.toLocaleString()}
       />
       <DashboardStatCard
         label="Today's Revenue"
         value={
           loading
-            ? '...'
-            : `$${stats.todaysRevenue.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-              })}`
+            ? loadingSkeleton
+            : `$${stats.todaysRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
         }
       />
       <DashboardStatCard
         label="New Applications"
-        value={
-          loading ? '...' : stats.newApplications.toLocaleString()
-        }
+        value={loading ? loadingSkeleton : stats.newApplications.toLocaleString()}
       />
       <DashboardStatCard
         label="Reviews to Approve"
-        value={
-          loading ? '...' : stats.reviewsToApprove.toLocaleString()
-        }
+        value={loading ? loadingSkeleton : stats.reviewsToApprove.toLocaleString()}
       />
     </div>
   )

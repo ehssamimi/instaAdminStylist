@@ -1,16 +1,24 @@
 "use client"
 
-import { useState } from "react"
-
+import { useMemo } from "react"
 import { RevenuePageView } from "@/components/revenue-page-view"
-import { useRevenueOverview } from "@/hooks/use-revenue-overview"
+import { usePerformances } from "@/hooks/use-performances"
 import { usePageTitle } from "@/hooks/use-page-title"
-import type { RevenueTimeRange } from "@/models/dashboardOverview"
 
 export default function RevenuePage() {
   const { title } = usePageTitle()
-  const [activeRange, setActiveRange] = useState<RevenueTimeRange>("7d")
-  const { model, loading, error, ready } = useRevenueOverview(activeRange)
+  const { data, loading, error, range, setRange } = usePerformances()
+
+  const model = useMemo(() => {
+    if (!data) return null
+    const rev = data.totalRevenue
+    const sal = data.totalSales
+    const series = (rev?.dataPoints ?? []).map((p) => ({ date: p.date, sales: p.value }))
+    const totalRevenue = rev?.total ?? 0
+    const bookings = sal?.total ?? 0
+    const avgRevenue = bookings > 0 ? totalRevenue / bookings : 0
+    return { series, totalRevenue, bookings, avgRevenue }
+  }, [data])
 
   return (
     <div className="relative -m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
@@ -21,7 +29,7 @@ export default function RevenuePage() {
         </p>
       ) : null}
 
-      {loading && !ready ? (
+      {loading && !model ? (
         <div className="space-y-6">
           <div className="h-11 animate-pulse rounded-md bg-muted" />
           <div className="grid grid-cols-1 gap-[10px] @xl/main:grid-cols-3">
@@ -31,10 +39,10 @@ export default function RevenuePage() {
           </div>
           <div className="h-[360px] animate-pulse rounded-xl bg-muted" />
         </div>
-      ) : ready && model ? (
+      ) : model ? (
         <RevenuePageView
-          activeRange={activeRange}
-          onRangeChange={setActiveRange}
+          activeRange={range}
+          onRangeChange={setRange}
           model={model}
         />
       ) : !error ? (
