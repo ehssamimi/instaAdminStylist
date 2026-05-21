@@ -1,24 +1,12 @@
 "use client"
 
-import { useMemo } from "react"
 import { RevenuePageView } from "@/components/revenue-page-view"
-import { usePerformances } from "@/hooks/use-performances"
+import { useRevenueApi } from "@/hooks/use-revenue-api"
 import { usePageTitle } from "@/hooks/use-page-title"
 
 export default function RevenuePage() {
   const { title } = usePageTitle()
-  const { data, loading, error, range, setRange } = usePerformances()
-
-  const model = useMemo(() => {
-    if (!data) return null
-    const rev = data.totalRevenue
-    const sal = data.totalSales
-    const series = (rev?.dataPoints ?? []).map((p) => ({ date: p.date, sales: p.value }))
-    const totalRevenue = rev?.total ?? 0
-    const bookings = sal?.total ?? 0
-    const avgRevenue = bookings > 0 ? totalRevenue / bookings : 0
-    return { series, totalRevenue, bookings, avgRevenue }
-  }, [data])
+  const { data: model, loading, error, range, setRange } = useRevenueApi()
 
   return (
     <div className="relative -m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">

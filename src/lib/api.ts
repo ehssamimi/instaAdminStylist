@@ -74,10 +74,10 @@ import type {
   DashboardOverviewRange,
   PerformanceRange,
   PerformancesResponse,
+  RevenueApiRange,
 } from "@/models/adminDashboard";
 import { normalizeAdminDashboardPayload } from "@/lib/dashboard-overview-normalize";
 import { normalizeAdminRevenuePayload } from "@/lib/revenue-api-normalize";
-import { revenueQueryParamForBackend } from "@/lib/revenue-dashboard";
 import {
   AdminBookingsListResponse,
   BookingDetailResponse,
@@ -284,15 +284,10 @@ export const dashboardApi = {
     return normalized;
   },
 
-  /**
-   * Revenue tab — `GET /api/admin/revenue?range=` (same `range` as dashboard:
-   * `past_week` | `3m` | `6m` | `1y`).
-   */
-  getRevenueOverview: async (params?: { range?: DashboardOverviewRange }) => {
+  /** Revenue tab — `GET /api/admin/revenue?range=week|3m|6m|1y|all`. */
+  getRevenueOverview: async (params?: { range?: RevenueApiRange }) => {
     const raw = await api.get<unknown>("/admin/revenue", {
-      params: {
-        range: revenueQueryParamForBackend(params?.range ?? "past_week"),
-      },
+      params: { range: params?.range ?? "week" },
     });
     const normalized = normalizeAdminRevenuePayload(raw);
     if (!normalized) {

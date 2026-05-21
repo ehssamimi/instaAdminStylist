@@ -1,11 +1,11 @@
 import type { DashboardStatsData } from '@/models/dashboardStats'
-import type { PerformanceRange } from '@/models/adminDashboard'
+import type { RevenueApiRange } from '@/models/adminDashboard'
 
 /** @deprecated Legacy chart ranges; superseded by {@link PerformanceRange}. */
 export type DashboardChartRange = '7d' | '90d' | '180d' | '365d'
 
-/** Revenue page tabs — mirrors the performances endpoint range values. */
-export type RevenueTimeRange = PerformanceRange
+/** Revenue page tabs — matches `GET /api/admin/revenue?range=` values. */
+export type RevenueTimeRange = RevenueApiRange
 
 export type SalesDataPoint = {
   date: string

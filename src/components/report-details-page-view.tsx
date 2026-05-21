@@ -133,9 +133,9 @@ export function ReportDetailsPageView({
       <ConfirmDialog
         open={removeDialogOpen}
         onOpenChange={setRemoveDialogOpen}
-        title="Remove user?"
-        description={`This will suspend ${report?.reportedUserName ?? "this user"} and mark the report as removed. This should align with your moderation policy.`}
-        confirmLabel="Remove user"
+        title="Block user?"
+        description={`This will suspend ${report?.reportedUserName ?? "this user"} and mark the report as Blocked. This should align with your moderation policy.`}
+        confirmLabel="Block user"
         onConfirm={() =>
           (async () => {
             if (!report) return

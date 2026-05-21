@@ -133,6 +133,7 @@ export interface BookingDetailDto {
   rating: number | null
   publicReview: string | null
   privateFeedback: string | null
+  serviceFeeRefundStatus: string | null
 }
 
 export interface BookingDetailResponse {
@@ -225,6 +226,9 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
   const whatYouWillNeedText =
     typeof whatYouNeed === 'string' && whatYouNeed.trim() ? whatYouNeed.trim() : null
 
+  const serviceFeeRefundStatus =
+    typeof o.serviceFeeRefundStatus === 'string' ? o.serviceFeeRefundStatus : null
+
   return {
     bookingId,
     stringId,
@@ -247,5 +251,6 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
     rating,
     publicReview,
     privateFeedback,
+    serviceFeeRefundStatus,
   }
 }

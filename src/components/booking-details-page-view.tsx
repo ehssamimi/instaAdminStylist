@@ -72,6 +72,7 @@ export function BookingDetailsPageView({
     canCancelBookingStatus(booking.status) &&
     !cancelledBookingIds.has(booking.bookingId);
   const canShowRefundServiceFee = booking != null;
+  const isAlreadyRefunded = booking?.serviceFeeRefundStatus === "refunded";
 
   async function handleCancelBooking() {
     if (!booking) return;
@@ -105,55 +106,12 @@ export function BookingDetailsPageView({
 
   return (
     <div className="-m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1 [&>div]:mb-0">
-          <PageBackHeading
-            title="Booking Details"
-            backHref={backHref}
-            backAriaLabel={backAriaLabel}
-          />
-        </div>
-        {booking ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:mt-1">
-            {canShowCancelCall ? (
-              <HeaderActionButton
-                type="button"
-                variant="neutral"
-                onClick={() => setCancelCallDialogOpen(true)}
-              >
-                Cancel Call
-              </HeaderActionButton>
-            ) : null}
-            {canShowRefundServiceFee ? (
-              refundState === "loading" ? (
-                <HeaderActionButton
-                  type="button"
-                  disabled
-                  className="border-gray-200 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-200"
-                >
-                  Refund Processing
-                  <Loader2 className="animate-spin" />
-                </HeaderActionButton>
-              ) : refundState === "success" ? (
-                <HeaderActionButton
-                  type="button"
-                  className="border-success-100 bg-success-200 text-success-600 hover:bg-success-200 hover:border-success-100"
-                >
-                  Refund Processing
-                  <Check />
-                </HeaderActionButton>
-              ) : (
-                <HeaderActionButton
-                  type="button"
-                  variant="error"
-                  onClick={() => setRefundServiceFeeDialogOpen(true)}
-                >
-                  Refund Service Fee
-                </HeaderActionButton>
-              )
-            ) : null}
-          </div>
-        ) : null}
+      <div className="mb-4 [&>div]:mb-0">
+        <PageBackHeading
+          title="Booking Details"
+          backHref={backHref}
+          backAriaLabel={backAriaLabel}
+        />
       </div>
 
       <ConfirmDialog
@@ -180,23 +138,54 @@ export function BookingDetailsPageView({
         <BookingDetailsPageSkeleton />
       ) : booking ? (
         <>
-          <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2">
-            <div className="flex flex-col gap-0.5">
-              <p className="font-satoshi font-bold text-sm text-gray-900">
-                ID: {booking.stringId}
-              </p>
-              {/* <p className="font-satoshi text-xs text-muted-foreground">
-                {booking.dateDisplay}
-              </p>
-              <p className="font-mono text-[11px] text-muted-foreground/80">
-                {booking.bookingId}
-              </p> */}
-            </div>
+          <div className="mb-4 flex flex-wrap items-end gap-x-4 gap-y-2">
+            <p className="font-satoshi text-sm font-bold text-gray-900">
+              ID: {booking.stringId}
+            </p>
             {booking.status === "completed" ? (
               <Badge variant="success">{tableStatusLabels.completed}</Badge>
             ) : (
               <TableStatusBadge status={booking.status} />
             )}
+            <div className="ml-auto flex items-center gap-2">
+              {canShowCancelCall ? (
+                <HeaderActionButton
+                  type="button"
+                  variant="neutral"
+                  onClick={() => setCancelCallDialogOpen(true)}
+                >
+                  Cancel Call
+                </HeaderActionButton>
+              ) : null}
+              {canShowRefundServiceFee ? (
+                isAlreadyRefunded || refundState === "success" ? (
+                  <HeaderActionButton
+                    type="button"
+                    className="border-success-100 bg-success-200 text-success-600 hover:bg-success-200 hover:border-success-100"
+                  >
+                    Refund Processing
+                    <Check />
+                  </HeaderActionButton>
+                ) : refundState === "loading" ? (
+                  <HeaderActionButton
+                    type="button"
+                    disabled
+                    className="border-gray-200 bg-gray-100 text-gray-500 hover:bg-gray-100 hover:border-gray-200"
+                  >
+                    Refund Processing
+                    <Loader2 className="animate-spin" />
+                  </HeaderActionButton>
+                ) : (
+                  <HeaderActionButton
+                    type="button"
+                    variant="error"
+                    onClick={() => setRefundServiceFeeDialogOpen(true)}
+                  >
+                    Refund Service Fee
+                  </HeaderActionButton>
+                )
+              ) : null}
+            </div>
           </div>
 
           <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

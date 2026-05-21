@@ -6,6 +6,9 @@ export type DashboardOverviewRange = 'past_week' | '3m' | '6m' | '1y'
 
 export type PerformanceRange = '7d' | '30d' | '6m'
 
+/** Range values accepted by `GET /api/admin/revenue?range=`. */
+export type RevenueApiRange = 'week' | '3m' | '6m' | '1y' | 'all'
+
 export interface PerformanceDataPoint {
   date: string
   value: number
