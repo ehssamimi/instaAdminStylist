@@ -23,7 +23,7 @@ function flowOptionToOnboardingOption(
     userType: "stylist",
     key: null,
     label: opt.label,
-    imageUrl: opt.imageUrl ?? null,
+    imageUrl: opt.imageUrl ?? opt.image_url ?? null,
     meta: opt.allowsTextInput
       ? { allowsTextInput: true, textInputPlaceholder: opt.textInputPlaceholder }
       : null,

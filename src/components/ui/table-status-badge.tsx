@@ -63,6 +63,27 @@ const tableStatusBadgeVariants = cva(
   }
 );
 
+const VaiantBageBookingDetails = cva(
+  "inline-flex min-w-[5.5rem] justify-center rounded-full p-2.5 font-satoshi text-xs font-medium",
+  {
+    variants: {
+      status: {
+        completed: "bg-success-50 text-success-800",
+        scheduled: "bg-warning-50 text-warning-800",
+        in_progress: "bg-warning-50 text-warning-800",
+        canceled: "bg-error-50 text-error-800 ",
+        pending_payment: "bg-warning-50 text-warning-800",
+        /** Unknown / unlisted API statuses */
+        neutral: "bg-brand-25 text-brand-800 ring-1 ring-brand-100 ring-inset",
+      },
+    },
+    defaultVariants: {
+      status: "neutral",
+    },
+  }
+);
+
+
 export function TableStatusBadge({
   status,
   className,

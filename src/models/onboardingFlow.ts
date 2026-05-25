@@ -2,6 +2,7 @@ export type FlowStepOption = {
   id: string
   label: string | null
   imageUrl?: string | null
+  image_url?: string | null
   allowsTextInput?: boolean
   textInputPlaceholder?: string
 }

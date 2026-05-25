@@ -15,9 +15,18 @@ import { PageBackHeading } from "@/components/page-back-heading";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  TableStatusBadge,
-  tableStatusLabels,
+  formatBookingStatusLabel,
 } from "@/components/ui/table-status-badge";
+
+type BadgeStatusVariant = "success" | "scheduled" | "canceled" | "secondary"
+
+function statusToBadgeVariant(status: string): BadgeStatusVariant {
+  const s = status.trim().toLowerCase().replace(/-/g, "_")
+  if (s === "completed") return "success"
+  if (s === "scheduled") return "scheduled"
+  if (s.startsWith("cancel")) return "canceled"
+  return "secondary"
+}
 import { bookingsApi, getApiErrorMessage } from "@/lib/api";
 import { formatDurationLabel } from "@/lib/booking-format";
 import type { BookingDetailDto } from "@/models/bookings";
@@ -33,7 +42,7 @@ type BookingDetailsPageViewProps = {
 function reviewBody(text: string | null) {
   const t = text?.trim();
   if (!t) {
-    return <span className="text-muted-foreground">No response yet.</span>;
+    return <span className="text-muted-foreground">Not Yet Rated</span>;
   }
   return (
     <span className="font-satoshi text-sm font-normal leading-relaxed text-gray-700">
@@ -71,7 +80,9 @@ export function BookingDetailsPageView({
     booking != null &&
     canCancelBookingStatus(booking.status) &&
     !cancelledBookingIds.has(booking.bookingId);
-  const canShowRefundServiceFee = booking != null;
+  const canShowRefundServiceFee =
+    booking != null &&
+    booking.status.trim().toLowerCase().replace(/-/g, "_") !== "canceled_by_admin";
   const isAlreadyRefunded = booking?.serviceFeeRefundStatus === "refunded";
 
   async function handleCancelBooking() {
@@ -142,11 +153,9 @@ export function BookingDetailsPageView({
             <p className="font-satoshi text-sm font-bold text-gray-900">
               ID: {booking.stringId}
             </p>
-            {booking.status === "completed" ? (
-              <Badge variant="success">{tableStatusLabels.completed}</Badge>
-            ) : (
-              <TableStatusBadge status={booking.status} />
-            )}
+            <Badge variant={statusToBadgeVariant(booking.status)}>
+              {formatBookingStatusLabel(booking.status)}
+            </Badge>
             <div className="ml-auto flex items-center gap-2">
               {canShowCancelCall ? (
                 <HeaderActionButton
@@ -243,29 +252,24 @@ export function BookingDetailsPageView({
           </div>
 
           <div className="flex flex-col gap-4">
-            <DetailSectionCard title="Booking Details">
-              {booking.bookingDetailsQa.length === 0 ? (
+            {booking.bookingDetailsQa.length === 0 ? (
+              <DetailSectionCard title="Booking Details">
                 <p className="font-satoshi text-sm text-muted-foreground">
                   No questionnaire responses for this booking.
                 </p>
-              ) : (
-                <ul className="flex flex-col gap-4">
-                  {booking.bookingDetailsQa.map((qa, i) => (
-                    <li
-                      key={`${qa.question}-${i}`}
-                      className="border-b border-border-soft pb-4 last:border-b-0 last:pb-0"
-                    >
-                      <p className="font-satoshi text-sm font-semibold text-gray-900">
-                        {qa.question || "—"}
-                      </p>
-                      <p className="mt-1 font-satoshi text-sm font-normal leading-relaxed text-gray-700">
-                        {qa.answer?.trim() ? qa.answer : "—"}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </DetailSectionCard>
+              </DetailSectionCard>
+            ) : (
+              booking.bookingDetailsQa.map((qa, i) => (
+                <DetailSectionCard
+                  key={`${qa.question}-${i}`}
+                  title={qa.question || "—"}
+                >
+                  <p className="font-satoshi text-sm font-normal leading-relaxed text-gray-700">
+                    {qa.answer?.trim() ? qa.answer : "—"}
+                  </p>
+                </DetailSectionCard>
+              ))
+            )}
 
             {booking.whatYouWillNeedText ? (
               <DetailSectionCard title="What You Will Need">
@@ -276,7 +280,7 @@ export function BookingDetailsPageView({
             ) : null}
 
             <DetailSectionCard
-              title="Rating"
+              title={booking.rating !== null ? "Rating" : "(Not Yet Rated)"}
               titleRight={<BookingRatingStars value={booking.rating} />}
             />
 

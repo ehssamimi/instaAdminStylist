@@ -264,7 +264,7 @@ const LoginPage = () => {
         <div className="rounded-xl overflow-hidden flex flex-col md:flex-row">
 
           {/* Login Form / OTP Form */}
-          <div className="flex-grow-0 flex-shrink-0 basis-[486px] bg-white py-[60px] px-6">
+          <div className={`flex-grow-0 flex-shrink-0 basis-[486px] bg-white px-6 ${mode === 'forgot-password' ? 'py-[24px]' : 'py-[60px]'}`}>
             {mode === 'login' ? (
               <div className="flex flex-col gap-5">
                 <h1 className="text-center font-satoshi text-3xl font-bold text-gray-900">
@@ -412,7 +412,7 @@ const LoginPage = () => {
                         className="w-full font-satoshi text-base h-12 rounded-lg border-gray-300 bg-white font-semibold text-neutral-black_03 hover:bg-gray-50"
                         onClick={handleBackFromForgotPassword}
                       >
-                        Back to Login
+                        {forgotSuccessEmail ? 'Back to Sign In' : 'Back to Login'}
                       </Button>
                     </div>
 
@@ -447,7 +447,7 @@ const LoginPage = () => {
                   className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to login
+                  Back to Sign In
                 </button>
 
                 <h1 className="text-3xl font-bold text-gray-900">Confirm Email</h1>

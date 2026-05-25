@@ -14,15 +14,15 @@ export function BookingRatingStars({
   value: number | null
   className?: string
 }) {
-  if (value == null) {
-    return (
-      <p className={cn("font-satoshi text-sm text-muted-foreground", className)}>
-        No rating yet.
-      </p>
-    )
-  }
+  // if (value == null) {
+  //   return (
+  //     <p className={cn("font-satoshi text-sm text-muted-foreground", className)}>
+  //       No rating yet.
+  //     </p>
+  //   )
+  // }
 
-  const filled = Math.min(5, Math.max(0, Math.round(value)))
+  const filled = Math.min(5, Math.max(0, Math.round(value??0)))
 
   return (
     <div
@@ -36,7 +36,7 @@ export function BookingRatingStars({
         return (
           <div
             key={label}
-            className="flex min-w-0 items-center gap-6"
+            className="flex min-w-0 items-center gap-3"
           >
             <Star
               className={cn(
@@ -48,7 +48,7 @@ export function BookingRatingStars({
               strokeWidth={isFilled ? 0 : 1.5}
               aria-hidden
             />
-            <span className="font-satoshi text-xs text-gray-600">{label}</span>
+            <span className="font-satoshi text-sm text-gray-600">{label}</span>
           </div>
         )
       })}

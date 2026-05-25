@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { getApiErrorMessage, stylistApplicationsApi } from "@/lib/api"
@@ -12,6 +13,7 @@ export function useStylistApproveReject(
   onAfterApprove?: () => void
 ) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [rejectModalOpen, setRejectModalOpen] = useState(false)
   const [approveSubmitting, setApproveSubmitting] = useState(false)
   const [rejectSubmitting, setRejectSubmitting] = useState(false)
@@ -22,6 +24,7 @@ export function useStylistApproveReject(
     try {
       await stylistApplicationsApi.approve(stylistId)
       toast.success("Stylist approved.")
+      void queryClient.invalidateQueries({ queryKey: ["stylist-applications"] })
       if (onAfterApprove) {
         onAfterApprove()
       } else {
@@ -32,7 +35,7 @@ export function useStylistApproveReject(
     } finally {
       setApproveSubmitting(false)
     }
-  }, [stylistId, approveSubmitting, router, backHref, onAfterApprove])
+  }, [stylistId, approveSubmitting, router, backHref, onAfterApprove, queryClient])
 
   const handleRejectConfirm = useCallback(
     async ({
@@ -52,6 +55,7 @@ export function useStylistApproveReject(
         }
         await stylistApplicationsApi.reject(stylistId, fd)
         toast.success("Application rejected.")
+        void queryClient.invalidateQueries({ queryKey: ["stylist-applications"] })
         setRejectModalOpen(false)
         router.push(backHref)
       } catch (e) {
@@ -60,7 +64,7 @@ export function useStylistApproveReject(
         setRejectSubmitting(false)
       }
     },
-    [stylistId, router, backHref]
+    [stylistId, router, backHref, queryClient]
   )
 
   return {

@@ -477,6 +477,23 @@ export const stylistsApi = {
     });
     return normalizeAdminStylistsListResponse(raw, perPage);
   },
+
+  /** `GET /api/admin/stylists/export` — returns a CSV blob. Accepts the same filters as `getList`. */
+  exportList: async (params?: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+  }): Promise<Blob> => {
+    const response = await apiClient.get<Blob>("/admin/stylists/export", {
+      params: {
+        ...(params?.page != null ? { page: params.page } : {}),
+        ...(params?.per_page != null ? { limit: params.per_page } : {}),
+        ...(params?.search?.trim() ? { search: params.search.trim() } : {}),
+      },
+      responseType: "blob",
+    });
+    return response.data;
+  },
   /**
    * Admin featured list — `GET /api/admin/featured-stylists` (e.g. `?page=1&limit=10`).
    * Optional `search` is forwarded if the backend supports it.

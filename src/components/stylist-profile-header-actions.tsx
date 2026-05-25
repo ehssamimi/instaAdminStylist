@@ -46,7 +46,7 @@ export function StylistProfileHeaderActions({
           disabled={updateButton.disabled}
           onClick={updateButton.onClick}
         >
-          Update
+          Update Stylist
         </HeaderActionButton>
       ) : (
         <>

@@ -1,15 +1,17 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { ColumnDef } from "@tanstack/react-table";
-import { FileText } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table";
 import { SearchInput } from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { useStylists } from "@/hooks/use-stylists";
+import { stylistsApi } from "@/lib/api";
 import type { StylistRowDto } from "@/models/stylists";
 import { EachContainer } from "./each-container";
 
@@ -44,10 +46,13 @@ export function StylistsTable() {
     page,
     perPage,
     totalPages,
+    search,
     setPage,
     setPerPage,
     setSearch,
   } = useStylists();
+
+  const [exporting, setExporting] = useState(false);
 
   const handleSearch = useCallback(
     (query: string) => {
@@ -56,6 +61,27 @@ export function StylistsTable() {
     },
     [setPage, setSearch]
   );
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      const blob = await stylistsApi.exportList({
+        page,
+        per_page: perPage,
+        search: search || undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "stylists.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to export stylists.");
+    } finally {
+      setExporting(false);
+    }
+  }, [page, perPage, search]);
 
   const handleRowClick = useCallback(
     (row: unknown) => {
@@ -147,10 +173,16 @@ export function StylistsTable() {
         <Button
           variant="outline"
           size="sm"
+          disabled={exporting}
           className="h-[var(--height-form-field)] shrink-0 shadow-[var(--shadow-outline-inset)]"
+          onClick={() => void handleExport()}
         >
-          <FileText className="h-6 w-6" />
-          <span>Export</span>
+          {exporting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileText className="h-6 w-6" />
+          )}
+          <span>{exporting ? "Exporting…" : "Export"}</span>
         </Button>
       </div>
 
