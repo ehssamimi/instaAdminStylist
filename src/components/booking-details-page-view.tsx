@@ -252,14 +252,22 @@ export function BookingDetailsPageView({
           </div>
 
           <div className="flex flex-col gap-4">
-            {booking.bookingDetailsQa.length === 0 ? (
+            {booking.bookingDetailsText != null ? (
               <DetailSectionCard title="Booking Details">
+                <p className="font-satoshi text-sm font-normal leading-relaxed text-gray-700">
+                  {booking.bookingDetailsText}
+                </p>
+              </DetailSectionCard>
+            ) : null}
+
+            {booking.questions.length === 0 ? (
+              <DetailSectionCard title="Questions">
                 <p className="font-satoshi text-sm text-muted-foreground">
                   No questionnaire responses for this booking.
                 </p>
               </DetailSectionCard>
             ) : (
-              booking.bookingDetailsQa.map((qa, i) => (
+              booking.questions.map((qa, i) => (
                 <DetailSectionCard
                   key={`${qa.question}-${i}`}
                   title={qa.question || "—"}

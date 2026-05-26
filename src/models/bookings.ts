@@ -127,7 +127,9 @@ export interface BookingDetailDto {
   serviceFeeDisplay: string
   /** Not returned by the current API — placeholder when unknown */
   callTypeDisplay: string
-  bookingDetailsQa: { question: string; answer: string }[]
+  /** Free-text booking details from the API — null means don't show */
+  bookingDetailsText: string | null
+  questions: { question: string; answer: string }[]
   /** Optional copy; omitted when the API does not supply it */
   whatYouWillNeedText: string | null
   rating: number | null
@@ -199,9 +201,14 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
   const durationLabel =
     Number.isFinite(callDuration) && callDuration > 0 ? `${Math.round(callDuration)} min` : '—'
 
-  let bookingDetailsQa: { question: string; answer: string }[] = []
-  if (Array.isArray(o.bookingDetails)) {
-    bookingDetailsQa = o.bookingDetails
+  const bookingDetailsText =
+    typeof o.bookingDetails === 'string' && o.bookingDetails.trim()
+      ? o.bookingDetails.trim()
+      : null
+
+  let questions: { question: string; answer: string }[] = []
+  if (Array.isArray(o.questions)) {
+    questions = o.questions
       .filter((x): x is Record<string, unknown> => x != null && typeof x === 'object')
       .map((x) => ({
         question: typeof x.question === 'string' ? x.question : '',
@@ -246,7 +253,8 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
     totalCostDisplay: fmtMoney(o.totalCost),
     serviceFeeDisplay: fmtMoney(o.serviceFee),
     callTypeDisplay,
-    bookingDetailsQa,
+    bookingDetailsText,
+    questions,
     whatYouWillNeedText,
     rating,
     publicReview,
