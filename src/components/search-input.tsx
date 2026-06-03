@@ -1,7 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Input } from "@/components/ui/input"
 import { IconLoader, IconSearch } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
+
+const DEBOUNCE_MS = 600
 
 interface SearchInputProps {
   onSearch: (query: string) => void
@@ -19,28 +21,20 @@ export const SearchInput = React.memo(({
   className = ""
 }: SearchInputProps) => {
   const [localValue, setLocalValue] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-
-  const handleSearch = useCallback(async (query: string) => {
-    setIsSearching(true)
-    try {
-      onSearch(query)
-    } catch (error) {
-      console.error("Search error:", error)
-    } finally {
-      setIsSearching(false)
-    }
-  }, [onSearch])
+  const [isPending, setIsPending] = useState(false)
+  // Keep a ref so the effect never needs onSearch as a dependency.
+  // This prevents the debounce timer from resetting on every parent re-render.
+  const onSearchRef = useRef(onSearch)
+  useEffect(() => { onSearchRef.current = onSearch })
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      handleSearch(localValue)
-    }, 400)
-
-    return () => {
-      clearTimeout(handler)
-    }
-  }, [localValue, handleSearch])
+    setIsPending(true)
+    const timer = setTimeout(() => {
+      setIsPending(false)
+      onSearchRef.current(localValue)
+    }, DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [localValue])
 
   return (
     <div className="relative flex-1 bg-surface-soft">
@@ -62,7 +56,7 @@ export const SearchInput = React.memo(({
           className
         )}
       />
-      {(isSearching || isLoading) && (
+      {(isPending || isLoading) && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
           <IconLoader className="size-4 animate-spin text-gray-400" />
         </div>

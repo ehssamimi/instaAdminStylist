@@ -20,6 +20,7 @@ import { useFeaturedStylists } from '@/hooks/use-featured-stylists'
 import { getApiErrorMessage, stylistsApi } from '@/lib/api'
 import type { StylistRowDto } from '@/models/stylists'
 import { toast } from 'sonner'
+import { EachContainer } from './each-container'
 
 const featuredStylistRowSchema = z.object({
   id: z.string(),
@@ -194,7 +195,9 @@ export function FeaturedStylistsTable() {
   )
 
   return (
-    <div className="mt-6 rounded-xl border border-border-soft bg-white p-4 shadow-sm md:p-6">
+            <EachContainer className="mt-0">
+
+    <div className="w-full">
       <RemoveFeaturedStylistDialog
         open={removeTarget != null}
         onOpenChange={(o) => {
@@ -280,5 +283,6 @@ export function FeaturedStylistsTable() {
         )}
       </div>
     </div>
+    </EachContainer>
   )
 }

@@ -19,6 +19,7 @@ import {
 } from "@/models/reports"
 import type { ReportStatus } from "@/models/reports"
 import { cn } from "@/lib/utils"
+import { EachContainer } from "@/components/each-container"
 
 const tabToStatus = {
   "to-review": "OPEN" as const,
@@ -277,8 +278,10 @@ export default function ReportsPage() {
           }
         />
       ) : null}
+      <EachContainer>
 
-      <div className="rounded-xl border border-border-soft bg-white p-4 shadow-sm md:p-6">
+      
+      {/* <div className="rounded-xl border border-border-soft bg-white p-4 shadow-sm md:p-6"> */}
         <SearchInput
           onSearch={handleSearch}
           placeholder="Search"
@@ -329,7 +332,8 @@ export default function ReportsPage() {
             />
           )}
         </div>
-      </div>
+        </EachContainer>
+      {/* </div> */}
     </div>
   )
 }
