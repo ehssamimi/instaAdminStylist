@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Clock, FileText, Loader2, Mail, Wallet } from "lucide-react";
+import { Check, Clock, FileText, Loader2, Mail, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { BookingRatingStars } from "@/components/booking-rating-stars";
 import {
@@ -13,6 +13,7 @@ import { HeaderActionButton } from "@/components/header-action-button";
 import { BookingDetailsPageSkeleton } from "@/components/booking-details-page-skeleton";
 import { PageBackHeading } from "@/components/page-back-heading";
 import { Badge } from "@/components/ui/badge";
+import { CancelBookingModal } from "@/components/cancel-booking-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   formatBookingStatusLabel,
@@ -37,6 +38,7 @@ type BookingDetailsPageViewProps = {
   backAriaLabel: string;
   loading?: boolean;
   errorMessage?: string | null;
+  onRefetch?: () => void;
 };
 
 function reviewBody(text: string | null) {
@@ -66,6 +68,7 @@ export function BookingDetailsPageView({
   backAriaLabel,
   loading = false,
   errorMessage = null,
+  onRefetch,
 }: BookingDetailsPageViewProps) {
   const [cancelCallDialogOpen, setCancelCallDialogOpen] = useState(false);
   const [refundServiceFeeDialogOpen, setRefundServiceFeeDialogOpen] =
@@ -76,6 +79,10 @@ export function BookingDetailsPageView({
   const [refundState, setRefundState] = useState<
     "idle" | "loading" | "success"
   >("idle");
+  const isCanceled =
+    booking != null &&
+    booking.status.trim().toLowerCase().replace(/-/g, "_").startsWith("cancel");
+
   const canShowCancelCall =
     booking != null &&
     canCancelBookingStatus(booking.status) &&
@@ -85,16 +92,17 @@ export function BookingDetailsPageView({
     booking.status.trim().toLowerCase().replace(/-/g, "_") !== "canceled_by_admin";
   const isAlreadyRefunded = booking?.serviceFeeRefundStatus === "refunded";
 
-  async function handleCancelBooking() {
+  async function handleCancelBooking(cancellationReason: string) {
     if (!booking) return;
     try {
-      await bookingsApi.cancel(booking.bookingId);
+      await bookingsApi.cancel(booking.bookingId, cancellationReason || undefined);
       setCancelledBookingIds((current) => {
         const next = new Set(current);
         next.add(booking.bookingId);
         return next;
       });
       toast.success("Booking canceled successfully.");
+      onRefetch?.();
     } catch (e) {
       toast.error(getApiErrorMessage(e));
       throw e;
@@ -125,10 +133,9 @@ export function BookingDetailsPageView({
         />
       </div>
 
-      <ConfirmDialog
+      <CancelBookingModal
         open={cancelCallDialogOpen}
         onOpenChange={setCancelCallDialogOpen}
-        description="Are you sure you want to cancel the call? The customer receives a full refund."
         onConfirm={handleCancelBooking}
       />
 
@@ -196,6 +203,27 @@ export function BookingDetailsPageView({
               ) : null}
             </div>
           </div>
+
+          {booking.cancellation != null ? (
+            <div className="mb-4 flex items-start gap-2 rounded-xl border-l-4 border-[#FF6467] bg-[#FEF2F2] px-4 py-3">
+            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FF6467]" aria-hidden>
+                <X className="size-3 stroke-[2.5] text-white" />
+              </span>
+                  <div className="flex flex-col gap-1">
+                <p className="font-satoshi text-sm font-bold text-[#9F0712]">
+                  Cancelled by {booking.cancellation.canceledByName}
+                  {booking.cancellation.canceledAt
+                    ? ` on ${new Date(booking.cancellation.canceledAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+                    : ""}
+                </p>
+                {booking.cancellation.reason ? (
+                  <p className="font-satoshi text-sm font-normal text-[#C10007]">
+                    {booking.cancellation.reason}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <DetailInfoCard
@@ -287,23 +315,48 @@ export function BookingDetailsPageView({
               </DetailSectionCard>
             ) : null}
 
-            <DetailSectionCard
-              title={booking.rating !== null ? "Rating" : "(Not Yet Rated)"}
-              titleRight={<BookingRatingStars value={booking.rating} />}
-            />
+            {isCanceled ? (
+              <>
+                <DetailSectionCard title="Rating">
+                  <p className="font-satoshi text-sm text-muted-foreground">
+                    Not available (canceled booking)
+                  </p>
+                </DetailSectionCard>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <DetailSectionCard title="Public Review">
-                <p className="font-satoshi text-sm leading-relaxed">
-                  {reviewBody(booking.publicReview)}
-                </p>
-              </DetailSectionCard>
-              <DetailSectionCard title="Private Feedback (Only visible to you)">
-                <p className="font-satoshi text-sm leading-relaxed">
-                  {reviewBody(booking.privateFeedback)}
-                </p>
-              </DetailSectionCard>
-            </div>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <DetailSectionCard title="Public Review">
+                    <p className="font-satoshi text-sm text-muted-foreground">
+                      Not available for canceled bookings
+                    </p>
+                  </DetailSectionCard>
+                  <DetailSectionCard title="Private Feedback (Only visible to you)">
+                    <p className="font-satoshi text-sm text-muted-foreground">
+                      Not Available
+                    </p>
+                  </DetailSectionCard>
+                </div>
+              </>
+            ) : (
+              <>
+                <DetailSectionCard
+                  title={booking.rating !== null ? "Rating" : "(Not Yet Rated)"}
+                  titleRight={<BookingRatingStars value={booking.rating} />}
+                />
+
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <DetailSectionCard title="Public Review">
+                    <p className="font-satoshi text-sm leading-relaxed">
+                      {reviewBody(booking.publicReview)}
+                    </p>
+                  </DetailSectionCard>
+                  <DetailSectionCard title="Private Feedback (Only visible to you)">
+                    <p className="font-satoshi text-sm leading-relaxed">
+                      {reviewBody(booking.privateFeedback)}
+                    </p>
+                  </DetailSectionCard>
+                </div>
+              </>
+            )}
           </div>
         </>
       ) : (

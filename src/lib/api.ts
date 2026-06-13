@@ -391,10 +391,10 @@ export const bookingsApi = {
     const data = normalizeBookingDetailFromApi(raw);
     return { success: data != null, data };
   },
-  cancel: async (id: string) => {
+  cancel: async (id: string, cancellationReason?: string) => {
     return api.post<unknown>(
       `/admin/bookings/${encodeURIComponent(id)}/cancel`,
-      {}
+      cancellationReason ? { cancellationReason } : {}
     );
   },
   refundFees: async (id: string) => {

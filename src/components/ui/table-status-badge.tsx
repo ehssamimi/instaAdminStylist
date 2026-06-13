@@ -8,7 +8,9 @@ export const tableStatusLabels = {
   completed: "Completed",
   scheduled: "Scheduled",
   canceled: "Canceled",
-  pending_payment: "Pending payment",
+  canceled_by_stylist: "Canceled By Stylist",
+  canceled_by_admin: "Canceled By Admin",
+  pending_payment: "Pending Payment",
 } as const;
 
 export type TableStatus = keyof typeof tableStatusLabels;
@@ -21,6 +23,8 @@ const variantByNormalized: Record<
   scheduled: "scheduled",
   canceled: "canceled",
   cancelled: "canceled",
+  canceled_by_stylist: "canceled",
+  canceled_by_admin: "canceled",
   pending_payment: "pending_payment",
 };
 
@@ -44,32 +48,12 @@ function resolveVariant(
 }
 
 const tableStatusBadgeVariants = cva(
-  "inline-flex min-w-[5.5rem] justify-center rounded-full p-2.5 font-satoshi text-xs font-medium",
+  "inline-flex min-w-[5.5rem] justify-center rounded-full p-2.5 font-satoshi text-xs font-bold",
   {
     variants: {
       status: {
         completed: "bg-success-50 text-success-800",
-        scheduled: "bg-warning-50 text-warning-800",
-        in_progress: "bg-warning-50 text-warning-800",
-        canceled: "bg-error-50 text-error-800 ",
-        pending_payment: "bg-warning-50 text-warning-800",
-        /** Unknown / unlisted API statuses */
-        neutral: "bg-brand-25 text-brand-800 ring-1 ring-brand-100 ring-inset",
-      },
-    },
-    defaultVariants: {
-      status: "neutral",
-    },
-  }
-);
-
-const VaiantBageBookingDetails = cva(
-  "inline-flex min-w-[5.5rem] justify-center rounded-full p-2.5 font-satoshi text-xs font-medium",
-  {
-    variants: {
-      status: {
-        completed: "bg-success-50 text-success-800",
-        scheduled: "bg-warning-50 text-warning-800",
+        scheduled: "bg-warning-50 text-[#DC6803]",
         in_progress: "bg-warning-50 text-warning-800",
         canceled: "bg-error-50 text-error-800 ",
         pending_payment: "bg-warning-50 text-warning-800",

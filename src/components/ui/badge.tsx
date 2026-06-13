@@ -17,15 +17,15 @@ const badgeVariants = cva(
           "border-transparent bg-error-500 text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20  ",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        /** Success-500 bg, Success-25 text; pill padding per design spec */
+        /** Figma: Success/500 bg + Success/25 text — pill, 11px Bold */
         success:
-          "rounded-full border-transparent bg-success-500 px-4 py-1 font-satoshi text-success-25 [a&]:hover:bg-success-500/90",
-        /** Warning-500 bg (#F79009), Success-25 text (#F6FEF9) */
+          "rounded-full border-transparent bg-success-500 px-4 py-1 font-satoshi text-[11px] font-bold text-success-25 [a&]:hover:bg-success-500/90",
+        /** Figma: Warning/500 bg + Success/25 text — pill, 11px Bold */
         scheduled:
-          "rounded-full border-transparent bg-warning-500 px-4 py-1 font-satoshi text-success-25 [a&]:hover:bg-warning-500/90",
-        /** Destructive bg; covers canceled / canceled_by_stylist / canceled_by_admin */
+          "rounded-full border-transparent bg-warning-500 px-4 py-1 font-satoshi text-[11px] font-bold text-success-25 [a&]:hover:bg-warning-500/90",
+        /** Figma: Error/500 bg + Success/25 text — pill, 11px Bold — covers canceled / canceled_by_stylist / canceled_by_admin */
         canceled:
-          "rounded-full border-transparent bg-destructive px-4 py-1 font-satoshi text-white [a&]:hover:bg-destructive/90",
+          "rounded-full border-transparent bg-error-500 px-4 py-1 font-satoshi text-[11px] font-bold text-success-25 [a&]:hover:bg-error-500/90",
       },
     },
     defaultVariants: {

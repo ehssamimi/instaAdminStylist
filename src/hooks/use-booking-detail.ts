@@ -8,6 +8,7 @@ export function useBookingDetail(id: string) {
   const [data, setData] = useState<BookingDetailDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [fetchCount, setFetchCount] = useState(0)
 
   useEffect(() => {
     if (!id) {
@@ -17,12 +18,14 @@ export function useBookingDetail(id: string) {
     }
 
     let cancelled = false
+    setLoading(true)
 
     void (async () => {
       try {
         const response = await bookingsApi.getById(id)
         if (!cancelled) {
           setData(response.data)
+          setError(null)
         }
       } catch (e) {
         if (!cancelled) {
@@ -38,7 +41,9 @@ export function useBookingDetail(id: string) {
     return () => {
       cancelled = true
     }
-  }, [id])
+  }, [id, fetchCount])
 
-  return { data, loading, error }
+  const refetch = () => setFetchCount((c) => c + 1)
+
+  return { data, loading, error, refetch }
 }

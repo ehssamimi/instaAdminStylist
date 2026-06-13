@@ -27,7 +27,7 @@ export default function BookingDetailsContent() {
         ? 'Back to stylist profile'
         : 'Back to booking history'
 
-  const { data, loading, error } = useBookingDetail(id)
+  const { data, loading, error, refetch } = useBookingDetail(id)
 
   return (
     <BookingDetailsPageView
@@ -36,6 +36,7 @@ export default function BookingDetailsContent() {
       errorMessage={error?.message ?? null}
       backHref={backHref}
       backAriaLabel={backAriaLabel}
+      onRefetch={refetch}
     />
   )
 }

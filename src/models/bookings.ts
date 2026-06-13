@@ -136,6 +136,12 @@ export interface BookingDetailDto {
   publicReview: string | null
   privateFeedback: string | null
   serviceFeeRefundStatus: string | null
+  cancellation: {
+    canceledByType: string
+    canceledByName: string
+    canceledAt: string
+    reason: string
+  } | null
 }
 
 export interface BookingDetailResponse {
@@ -236,6 +242,19 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
   const serviceFeeRefundStatus =
     typeof o.serviceFeeRefundStatus === 'string' ? o.serviceFeeRefundStatus : null
 
+  const cancellationRaw = o.cancellation
+  const cancellation =
+    cancellationRaw != null && typeof cancellationRaw === 'object'
+      ? (() => {
+          const c = cancellationRaw as Record<string, unknown>
+          const canceledByType = typeof c.canceledByType === 'string' ? c.canceledByType : ''
+          const canceledByName = typeof c.canceledByName === 'string' ? c.canceledByName : ''
+          const canceledAt = typeof c.canceledAt === 'string' ? c.canceledAt : ''
+          const reason = typeof c.reason === 'string' ? c.reason : ''
+          return canceledByName || canceledAt ? { canceledByType, canceledByName, canceledAt, reason } : null
+        })()
+      : null
+
   return {
     bookingId,
     stringId,
@@ -260,5 +279,6 @@ export function normalizeBookingDetailFromApi(raw: unknown): BookingDetailDto | 
     publicReview,
     privateFeedback,
     serviceFeeRefundStatus,
+    cancellation,
   }
 }
