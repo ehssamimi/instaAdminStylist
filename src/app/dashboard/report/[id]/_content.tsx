@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 
 import { ReportDetailsPageView } from '@/components/report-details-page-view'
 import { useReportDetail } from '@/hooks/use-report-detail'
+import { getApiErrorMessage } from '@/lib/api'
 
 export default function ReportDetailContent() {
   const params = useParams()
@@ -16,7 +17,7 @@ export default function ReportDetailContent() {
     <ReportDetailsPageView
       report={data}
       loading={loading}
-      errorMessage={error?.message ?? null}
+      errorMessage={error ? getApiErrorMessage(error) : null}
       onRefetchReport={refetch}
       backHref="/dashboard/report"
       backAriaLabel="Back to reports"

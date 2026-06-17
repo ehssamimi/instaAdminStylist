@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { format, isValid, parseISO } from "date-fns"
 import { Mail, Phone, X, ZoomIn } from "lucide-react"
+import { toast } from "sonner"
 
 import { EachContainer, EachContainerDivider } from "@/components/each-container"
 import { HeaderActionButton } from "@/components/header-action-button"
@@ -17,6 +18,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { DetailNotFound } from "@/components/detail-not-found"
 import type { AdminReportDetail } from "@/models/reports"
 
 function formatReportDate(iso: string): string {
@@ -73,6 +75,10 @@ export function ReportDetailsPageView({
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false)
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (errorMessage) toast.error(errorMessage)
+  }, [errorMessage])
 
   const email = report?.reportedUserEmail?.trim()
   const phone = report?.reportedUserPhone?.trim()
@@ -245,12 +251,6 @@ export function ReportDetailsPageView({
         </DialogContent>
       </Dialog>
 
-      {errorMessage ? (
-        <p className="mb-4 font-satoshi text-sm text-destructive" role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
-
       {mutationError ? (
         <p className="mb-4 font-satoshi text-sm text-destructive" role="alert">
           {mutationError}
@@ -260,9 +260,13 @@ export function ReportDetailsPageView({
       {loading ? (
         <ReportDetailsPageSkeleton />
       ) : !report ? (
-        <p className="font-satoshi text-sm text-muted-foreground" role="status">
-          Report not found.
-        </p>
+        <DetailNotFound
+          title="Report Not Found"
+          description="This report may have been removed or the ID is invalid."
+          errorMessage={errorMessage}
+          backHref={backHref}
+          backLabel="Back to reports"
+        />
       ) : (
         <div className="flex flex-col gap-6">
           <EachContainer> 
