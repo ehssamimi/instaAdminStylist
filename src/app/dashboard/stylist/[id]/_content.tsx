@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { StylistProfileScreen } from '@/components/stylist-profile-screen'
 import { useStylistDetail } from '@/hooks/use-stylist-detail'
 import { useStylistBookings } from '@/hooks/use-stylist-bookings'
+import { getApiErrorMessage } from '@/lib/api'
 
 export default function StylistDetailsContent() {
   const params = useParams()
@@ -55,7 +56,7 @@ export default function StylistDetailsContent() {
       stylistId={id}
       stylist={data}
       loading={loading}
-      errorMessage={error?.message ?? null}
+      errorMessage={error ? getApiErrorMessage(error) : null}
       backHref="/dashboard/stylists"
       backAriaLabel="Back to stylists"
       showBookingActivityCard

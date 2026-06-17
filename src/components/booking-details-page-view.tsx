@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Clock, FileText, Loader2, Mail, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { BookingRatingStars } from "@/components/booking-rating-stars";
@@ -31,6 +31,7 @@ function statusToBadgeVariant(status: string): BadgeStatusVariant {
 import { bookingsApi, getApiErrorMessage } from "@/lib/api";
 import { formatDurationLabel } from "@/lib/booking-format";
 import type { BookingDetailDto } from "@/models/bookings";
+import { DetailNotFound } from "@/components/detail-not-found";
 
 type BookingDetailsPageViewProps = {
   booking: BookingDetailDto | null;
@@ -70,6 +71,10 @@ export function BookingDetailsPageView({
   errorMessage = null,
   onRefetch,
 }: BookingDetailsPageViewProps) {
+  useEffect(() => {
+    if (errorMessage) toast.error(errorMessage);
+  }, [errorMessage]);
+
   const [cancelCallDialogOpen, setCancelCallDialogOpen] = useState(false);
   const [refundServiceFeeDialogOpen, setRefundServiceFeeDialogOpen] =
     useState(false);
@@ -145,12 +150,6 @@ export function BookingDetailsPageView({
         description="Are you sure you want to refund the service fee for this booking?"
         onConfirm={handleRefundServiceFee}
       />
-
-      {errorMessage ? (
-        <p className="mb-4 font-satoshi text-sm text-destructive" role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
 
       {loading ? (
         <BookingDetailsPageSkeleton />
@@ -360,10 +359,13 @@ export function BookingDetailsPageView({
           </div>
         </>
       ) : (
-        <p className="font-satoshi text-sm text-black-40">
-          No booking found for this id. Open from Booking History or use a valid
-          booking id.
-        </p>
+        <DetailNotFound
+          title="Booking Not Found"
+          description="This booking may have been removed or the ID is invalid."
+          errorMessage={errorMessage}
+          backHref={backHref}
+          backLabel="Back to bookings"
+        />
       )}
     </div>
   );

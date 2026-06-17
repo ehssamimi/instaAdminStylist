@@ -5,6 +5,7 @@ import { useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { CircleX } from "lucide-react";
 
+import { DetailNotFound } from "@/components/detail-not-found";
 import { EachContainer } from "@/components/each-container";
 import {
   StylistProfileStylingInfoSection,
@@ -509,6 +510,10 @@ export function StylistProfileScreen({
   stylistBookingsFromApi = null,
   onAfterApprove,
 }: StylistProfileScreenProps) {
+  useEffect(() => {
+    if (errorMessage) toast.error(errorMessage);
+  }, [errorMessage]);
+
   const [updateSubmitting, setUpdateSubmitting] = useState(false);
   const {
     rejectModalOpen,
@@ -596,7 +601,7 @@ export function StylistProfileScreen({
           backHref={backHref}
           aria-label={backAriaLabel}
         />
-        {!showRejectedState ? (
+        {stylist && !showRejectedState ? (
           <StylistProfileHeaderActions
             loading={loading}
             stylingFormLocked={stylingFormLocked}
@@ -617,14 +622,14 @@ export function StylistProfileScreen({
 
       {loading && <StylistProfilePageSkeleton />}
 
-      {errorMessage && !loading && (
-        <p className="font-satoshi text-sm text-error-600" role="alert">
-          {errorMessage}
-        </p>
-      )}
-
-      {!loading && !stylist && !errorMessage && (
-        <p className="font-satoshi text-sm text-black-40">Stylist not found.</p>
+      {!loading && !stylist && (
+        <DetailNotFound
+          title="Stylist Not Found"
+          description="This stylist may have been removed or the ID is invalid."
+          errorMessage={errorMessage}
+          backHref={backHref}
+          backLabel="Back to stylists"
+        />
       )}
 
       {stylist && (

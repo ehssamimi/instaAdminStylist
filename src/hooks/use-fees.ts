@@ -10,6 +10,7 @@ function sortFees(rows: AdminFeeDto[]): AdminFeeDto[] {
 
 export function useFees() {
   const [rows, setRows] = useState<AdminFeeDto[]>([])
+  const [originalRows, setOriginalRows] = useState<AdminFeeDto[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -19,7 +20,9 @@ export function useFees() {
     setError(null)
     try {
       const data = await feesApi.getAll()
-      setRows(sortFees(Array.isArray(data) ? data : []))
+      const sorted = sortFees(Array.isArray(data) ? data : [])
+      setRows(sorted)
+      setOriginalRows(sorted)
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)))
     } finally {
@@ -39,6 +42,7 @@ export function useFees() {
 
   return {
     rows,
+    originalRows,
     loading,
     saving,
     error,

@@ -41,6 +41,11 @@ export function useCustomerDetail(
     staleTime: 30_000,
     gcTime: 300_000,
     placeholderData: keepPreviousData,
+    retry: (failureCount, error) => {
+      const status = (error as { response?: { status?: number } })?.response?.status
+      if (status != null && status >= 400 && status < 500) return false
+      return failureCount < 2
+    },
   })
 
   const payload = query.data

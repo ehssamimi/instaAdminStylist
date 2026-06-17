@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation'
 import { BookingDetailsPageView } from '@/components/booking-details-page-view'
 import { useBookingDetail } from '@/hooks/use-booking-detail'
+import { getApiErrorMessage } from '@/lib/api'
 
 export default function BookingDetailsStandaloneContent() {
   const params = useParams()
@@ -14,7 +15,7 @@ export default function BookingDetailsStandaloneContent() {
     <BookingDetailsPageView
       booking={data}
       loading={loading}
-      errorMessage={error?.message ?? null}
+      errorMessage={error ? getApiErrorMessage(error) : null}
       backHref="/dashboard/bookings"
       backAriaLabel="Back to booking history"
     />

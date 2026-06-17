@@ -3,6 +3,7 @@
 import { useParams, useSearchParams } from 'next/navigation'
 import { BookingDetailsPageView } from '@/components/booking-details-page-view'
 import { useBookingDetail } from '@/hooks/use-booking-detail'
+import { getApiErrorMessage } from '@/lib/api'
 
 export default function BookingDetailsContent() {
   const params = useParams()
@@ -33,7 +34,7 @@ export default function BookingDetailsContent() {
     <BookingDetailsPageView
       booking={data}
       loading={loading}
-      errorMessage={error?.message ?? null}
+      errorMessage={error ? getApiErrorMessage(error) : null}
       backHref={backHref}
       backAriaLabel={backAriaLabel}
       onRefetch={refetch}

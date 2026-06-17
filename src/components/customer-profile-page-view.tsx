@@ -1,8 +1,11 @@
 'use client'
 
+import { useEffect } from 'react'
+import { toast } from 'sonner'
 import { PageBackHeading } from '@/components/page-back-heading'
 import { ProfileHeaderCard } from '@/components/profile-header-card'
 import { BookingActivitySection } from '@/components/booking-activity-section'
+import { DetailNotFound } from '@/components/detail-not-found'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { CustomerDetailDto } from '@/models/customer'
 
@@ -64,6 +67,10 @@ export function CustomerProfilePageView({
   bookingsTableLoading,
   onRetry,
 }: CustomerProfilePageViewProps) {
+  useEffect(() => {
+    if (errorMessage) toast.error(errorMessage)
+  }, [errorMessage])
+
   return (
     <div className="-m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
       <div className="mb-6">
@@ -76,26 +83,15 @@ export function CustomerProfilePageView({
 
       {loading && <CustomerProfileSkeleton />}
 
-      {errorMessage && !loading && (
-        <div
-          className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 font-satoshi text-sm text-error-600"
-          role="alert"
-        >
-          <span>{errorMessage}</span>
-          {onRetry ? (
-            <button
-              type="button"
-              className="underline underline-offset-2"
-              onClick={onRetry}
-            >
-              Retry
-            </button>
-          ) : null}
-        </div>
-      )}
-
-      {!loading && !customer && !errorMessage && (
-        <p className="font-satoshi text-sm text-black-40">Customer not found.</p>
+      {!loading && !customer && (
+        <DetailNotFound
+          title="Customer Not Found"
+          description="This customer may have been removed or the ID is invalid."
+          errorMessage={errorMessage}
+          backHref={backHref}
+          backLabel="Back to customers"
+          onRetry={onRetry}
+        />
       )}
 
       {customer && !loading && (
