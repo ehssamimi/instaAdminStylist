@@ -5,8 +5,18 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export type StylistProfileHeaderActionsProps = {
   loading: boolean
-  /** When true, show Reject + Approve; when false, show Update. */
+  /** When true, show Reject + Approve; when false, show Ban/Unban + Update. */
   stylingFormLocked: boolean
+  banButton: {
+    isBanned: boolean
+    disabled: boolean
+    onClick: () => void
+    stylistName: string
+  }
+  removeButton: {
+    disabled: boolean
+    onClick: () => void
+  }
   updateButton: {
     disabled: boolean
     onClick: () => void
@@ -23,6 +33,8 @@ export type StylistProfileHeaderActionsProps = {
 export function StylistProfileHeaderActions({
   loading,
   stylingFormLocked,
+  banButton,
+  removeButton: _removeButton,
   updateButton,
   pendingVerification,
 }: StylistProfileHeaderActionsProps) {
@@ -40,14 +52,34 @@ export function StylistProfileHeaderActions({
           />
         </>
       ) : !stylingFormLocked ? (
-        <HeaderActionButton
-          type="button"
-          variant="primary"
-          disabled={updateButton.disabled}
-          onClick={updateButton.onClick}
-        >
-          Update Stylist
-        </HeaderActionButton>
+        <>
+          {/* <HeaderActionButton
+            type="button"
+            variant="errorSoft"
+            disabled={removeButton.disabled}
+            onClick={removeButton.onClick}
+          >
+            Remove {banButton.stylistName}
+          </HeaderActionButton> */}
+          <HeaderActionButton
+            type="button"
+            variant="errorSoft"
+            disabled={banButton.disabled}
+            onClick={banButton.onClick}
+          >
+            {banButton.isBanned
+              ? `Reinstate ${banButton.stylistName}`
+              : `Ban ${banButton.stylistName}`}
+          </HeaderActionButton>
+          <HeaderActionButton
+            type="button"
+            variant="primary"
+            disabled={updateButton.disabled}
+            onClick={updateButton.onClick}
+          >
+            Update Stylist
+          </HeaderActionButton>
+        </>
       ) : (
         <>
           <HeaderActionButton

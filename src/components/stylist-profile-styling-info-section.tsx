@@ -1,9 +1,12 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import {
   type Control,
   type FieldPath,
   type FieldValues,
+  useFormContext,
+  useWatch,
 } from "react-hook-form"
 
 import { EachContainer } from "@/components/each-container"
@@ -26,6 +29,16 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import type { SimpleOption } from "@/hooks/use-onboarding-flow"
+import {
+  locationsApi,
+  type LocationCity,
+  type LocationCountry,
+  type LocationState,
+} from "@/lib/api"
+
+// Temporary: country is fixed to US until multi-country support is added
+const US_COUNTRY_ID = "6c959176-b60c-4e11-bbc1-8d679c4becd8"
+const US_COUNTRY: LocationCountry = { id: US_COUNTRY_ID, name: "United States", code: "US" }
 
 const READ_ONLY_INPUT_CLASS =
   "cursor-default focus:border-gray-300 focus:ring-0 focus:shadow-form-field"
@@ -107,6 +120,9 @@ export type StylistProfileStylingInfoFormValues = {
   gender: string
   businessName: string
   location: string
+  locationCountryId: string
+  locationStateId: string
+  locationCityId: string
   linkedInUrl: string
   tiktokHandle: string
   instagramHandle: string
@@ -269,6 +285,139 @@ function GenderSelectField<T extends FieldValues>({
   )
 }
 
+function LocationDropdownFields<T extends StylistProfileStylingInfoFormValues>({
+  control,
+  disabled,
+}: {
+  control: Control<T>
+  disabled: boolean
+}) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { setValue } = useFormContext<any>()
+
+  const stateId = (useWatch({ control, name: "locationStateId" as FieldPath<T> }) as string) ?? ""
+
+  const [states, setStates] = useState<LocationState[]>([])
+  const [cities, setCities] = useState<LocationCity[]>([])
+  const [statesLoading, setStatesLoading] = useState(false)
+  const [citiesLoading, setCitiesLoading] = useState(false)
+
+  // Country is fixed to US — ensure the form value is always set to US
+  useEffect(() => {
+    setValue("locationCountryId", US_COUNTRY_ID)
+  }, [setValue])
+
+  // Fetch US states on mount
+  useEffect(() => {
+    setStatesLoading(true)
+    locationsApi.getStatesByCountry(US_COUNTRY_ID)
+      .then(setStates)
+      .catch(() => {})
+      .finally(() => setStatesLoading(false))
+  }, [])
+
+  // Fetch cities whenever stateId changes
+  useEffect(() => {
+    setCities([])
+    if (!stateId) return
+    setCitiesLoading(true)
+    locationsApi.getCitiesByState(stateId)
+      .then(setCities)
+      .catch(() => {})
+      .finally(() => setCitiesLoading(false))
+  }, [stateId])
+
+  return (
+    <>
+      {/* Country — read-only, fixed to United States */}
+      <FormItem className="gap-1.5">
+        <FormLabel className="text-sm font-medium text-text-main">Country</FormLabel>
+        <Select disabled value={US_COUNTRY_ID}>
+          <SelectTrigger className={selectTriggerClass}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="rounded-lg border-gray-200 bg-white p-2 shadow-lg">
+            <SelectItem key={US_COUNTRY.id} value={US_COUNTRY.id} className={selectItemClass}>
+              {US_COUNTRY.name}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </FormItem>
+
+      {/* State */}
+      <FormField
+        control={control}
+        name={"locationStateId" as FieldPath<T>}
+        render={({ field }) => (
+          <FormItem className="gap-1.5">
+            <FormLabel className="text-sm font-medium text-text-main">State</FormLabel>
+            <Select
+              disabled={disabled || statesLoading}
+              value={(field.value as string) || ""}
+              onValueChange={(v) => {
+                field.onChange(v)
+                setValue("locationCityId", "")
+              }}
+            >
+              <FormControl>
+                <SelectTrigger className={selectTriggerClass}>
+                  <SelectValue
+                    placeholder={statesLoading ? "Loading…" : "Select state"}
+                  />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent className="max-h-60 rounded-lg border-gray-200 bg-white p-2 shadow-lg">
+                {states.map((s) => (
+                  <SelectItem key={s.id} value={s.id} className={selectItemClass}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* City */}
+      <FormField
+        control={control}
+        name={"locationCityId" as FieldPath<T>}
+        render={({ field }) => (
+          <FormItem className="gap-1.5">
+            <FormLabel className="text-sm font-medium text-text-main">City</FormLabel>
+            <Select
+              disabled={disabled || !stateId || citiesLoading}
+              value={(field.value as string) || ""}
+              onValueChange={field.onChange}
+            >
+              <FormControl>
+                <SelectTrigger className={selectTriggerClass}>
+                  <SelectValue
+                    placeholder={
+                      citiesLoading ? "Loading…" :
+                      !stateId ? "Select state first" :
+                      "Select city"
+                    }
+                  />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent className="max-h-60 rounded-lg border-gray-200 bg-white p-2 shadow-lg">
+                {cities.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className={selectItemClass}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
+  )
+}
+
 export type StylistProfileStylingInfoSectionProps<
   T extends StylistProfileStylingInfoFormValues,
 > = {
@@ -327,8 +476,9 @@ export function StylistProfileStylingInfoSection<
           control={control}
           name={"location" as FieldPath<T>}
           label="Location"
-          disabled={disabled}
+          disabled={true}
         />
+        <LocationDropdownFields control={control} disabled={disabled} />
         <StylingInfoField
           control={control}
           name={"linkedInUrl" as FieldPath<T>}

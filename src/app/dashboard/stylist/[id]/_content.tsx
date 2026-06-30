@@ -14,7 +14,7 @@ export default function StylistDetailsContent() {
   const [bookingsPage, setBookingsPage] = useState(1)
   const [bookingsPageSize, setBookingsPageSize] = useState(10)
 
-  const { data, loading, error } = useStylistDetail(id)
+  const { data, loading, error, refetch } = useStylistDetail(id)
   const {
     rows: bookingRows,
     meta: bookingsMeta,
@@ -61,6 +61,7 @@ export default function StylistDetailsContent() {
       backAriaLabel="Back to stylists"
       showBookingActivityCard
       stylistBookingsFromApi={stylistBookingsFromApi}
+      onRefetch={refetch}
     />
   )
 }

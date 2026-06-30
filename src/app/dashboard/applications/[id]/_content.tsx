@@ -19,6 +19,7 @@ export default function ApplicationDetailContent() {
       backHref="/dashboard/applications"
       backAriaLabel="Back to applications"
       onAfterApprove={refetch}
+      onRefetch={refetch}
     />
   )
 }

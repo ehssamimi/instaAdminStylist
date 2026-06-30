@@ -126,6 +126,31 @@ export function StylistsTable() {
       { accessorKey: "last_name", header: "Last Name", enableSorting: false },
       { accessorKey: "first_name", header: "First Name", enableSorting: false },
       {
+        accessorKey: "accountStatus",
+        header: "Status",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const status = row.original.accountStatus;
+          if (status === "BANNED") {
+            return (
+              <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 font-satoshi text-xs font-semibold text-red-700">
+                Banned
+              </span>
+            );
+          }
+          if (status === "SUSPENDED") {
+            return (
+              <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 font-satoshi text-xs font-semibold text-amber-700">
+                Suspended
+              </span>
+            );
+          }
+          return (
+            <span className="font-satoshi text-sm text-[#535862]">Active</span>
+          );
+        },
+      },
+      {
         accessorKey: "speciality",
         header: "Speciality",
         enableSorting: false,

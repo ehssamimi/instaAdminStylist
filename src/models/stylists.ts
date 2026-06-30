@@ -40,6 +40,61 @@ export type StylistDetailsApiDto = {
   verification_status?: string | null
   rejectionReason?: string | null
   rejection_reason?: string | null
+  accountStatus?: AccountStatusDto | null
+  account_status?: AccountStatusDto | null
+  banReason?: string | null
+  ban_reason?: string | null
+  bannedAt?: string | null
+  banned_at?: string | null
+  locationStructured?: {
+    country?: { id: string; name: string; iso2?: string; code?: string } | null
+    state?: { id: string; name: string; code?: string } | null
+    city?: { id: string; name: string } | null
+    display?: string | null
+    needsReview?: boolean
+  } | null
+}
+
+export type AccountStatusDto = 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'DELETED'
+
+export type StylistBanResponse = {
+  success: boolean
+  message: string
+  data: {
+    stylistId: string
+    accountStatus: AccountStatusDto
+    banReason?: string
+    bannedAt?: string
+    cancelledBookings?: number
+    skippedBookings?: number
+    failedCancellations?: Array<{ bookingId: string; error: string }>
+  }
+}
+
+export type StylistUnbanResponse = {
+  success: boolean
+  message: string
+  data: {
+    stylistId: string
+    accountStatus: AccountStatusDto
+  }
+}
+
+export type StylistModerationAuditEntry = {
+  id: string
+  action: 'BANNED' | 'UNBANNED'
+  reason: string | null
+  performedByAdminId: string
+  metadata: Record<string, unknown> | null
+  createdAt: string
+}
+
+export type StylistModerationStatusResponse = {
+  stylistId: string
+  accountStatus: AccountStatusDto
+  banReason: string | null
+  bannedAt: string | null
+  recentAudit: StylistModerationAuditEntry[]
 }
 
 export interface StylistRowDto {
@@ -55,6 +110,9 @@ export interface StylistRowDto {
   stylist_since: string
   avg_weekly_availability: string
   avg_weekly_drop_in: string
+  accountStatus?: AccountStatusDto | null
+  banReason?: string | null
+  bannedAt?: string | null
 }
 
 export interface StylistDetailDto extends StylistRowDto {
@@ -85,6 +143,16 @@ export interface StylistDetailDto extends StylistRowDto {
    */
   verificationStatus?: string | null
   rejectionReason?: string | null
+  accountStatus?: AccountStatusDto | null
+  banReason?: string | null
+  bannedAt?: string | null
+  locationStructured: {
+    countryId: string | null
+    stateId: string | null
+    cityId: string | null
+    display: string | null
+    needsReview: boolean
+  } | null
 }
 
 /**
@@ -253,6 +321,9 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
   const verificationStatusRaw =
     raw.verificationStatus ?? raw.verification_status
   const rejectionReasonRaw = raw.rejectionReason ?? raw.rejection_reason
+  const accountStatusRaw = raw.accountStatus ?? raw.account_status
+  const banReasonRaw = raw.banReason ?? raw.ban_reason
+  const bannedAtRaw = raw.bannedAt ?? raw.banned_at
 
   return {
     id: String(raw.id),
@@ -303,6 +374,39 @@ export function mapStylistDetailsApiToDto(raw: StylistDetailsApiDto): StylistDet
         : typeof rejectionReasonRaw === 'string'
           ? rejectionReasonRaw
           : String(rejectionReasonRaw),
+    accountStatus:
+      accountStatusRaw === undefined || accountStatusRaw === null
+        ? accountStatusRaw
+        : typeof accountStatusRaw === 'string'
+          ? (accountStatusRaw as AccountStatusDto)
+          : String(accountStatusRaw) as AccountStatusDto,
+    banReason:
+      banReasonRaw === undefined || banReasonRaw === null
+        ? banReasonRaw
+        : typeof banReasonRaw === 'string'
+          ? banReasonRaw
+          : String(banReasonRaw),
+    bannedAt:
+      bannedAtRaw === undefined || bannedAtRaw === null
+        ? bannedAtRaw
+        : typeof bannedAtRaw === 'string'
+          ? bannedAtRaw
+          : String(bannedAtRaw),
+    locationStructured: (() => {
+      const loc = (raw as Record<string, unknown>).locationStructured
+      if (loc == null || typeof loc !== 'object') return null
+      const l = loc as Record<string, unknown>
+      const country = l.country != null && typeof l.country === 'object' ? l.country as Record<string, unknown> : null
+      const state = l.state != null && typeof l.state === 'object' ? l.state as Record<string, unknown> : null
+      const city = l.city != null && typeof l.city === 'object' ? l.city as Record<string, unknown> : null
+      return {
+        countryId: country ? coalesceStr(country.id) : null,
+        stateId: state ? coalesceStr(state.id) : null,
+        cityId: city ? coalesceStr(city.id) : null,
+        display: coalesceStr(l.display),
+        needsReview: Boolean(l.needsReview),
+      }
+    })(),
   }
 }
 

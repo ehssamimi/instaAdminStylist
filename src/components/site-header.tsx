@@ -108,7 +108,7 @@ export function SiteHeader() {
           <h1 className="ml-auto flex shrink-0 items-center text-base font-semibold text-neutral-black_03 lg:text-lg">
             Admin
             <span className="ml-1 text-[10px] text-gray-300 lg:text-xs">
-              (v-0.0.12)
+              (v-0.0.13)
             </span>
           </h1>
         </div>

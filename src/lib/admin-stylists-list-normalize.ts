@@ -109,6 +109,10 @@ function mapListItem(raw: unknown): StylistRowDto | null {
     rec.totalCompletedBookings
   )
 
+  const accountStatusRaw = rec.accountStatus ?? rec.account_status
+  const banReasonRaw = rec.banReason ?? rec.ban_reason
+  const bannedAtRaw = rec.bannedAt ?? rec.banned_at
+
   return {
     id,
     profile_picture,
@@ -128,6 +132,22 @@ function mapListItem(raw: unknown): StylistRowDto | null {
     avg_weekly_drop_in: formatScalarDisplay(
       rec.avg_weekly_drop_in ?? rec.avgWeeklyDropIn
     ),
+    accountStatus:
+      typeof accountStatusRaw === 'string'
+        ? (accountStatusRaw as StylistRowDto['accountStatus'])
+        : null,
+    banReason:
+      banReasonRaw === undefined || banReasonRaw === null
+        ? null
+        : typeof banReasonRaw === 'string'
+          ? banReasonRaw
+          : String(banReasonRaw),
+    bannedAt:
+      bannedAtRaw === undefined || bannedAtRaw === null
+        ? null
+        : typeof bannedAtRaw === 'string'
+          ? bannedAtRaw
+          : String(bannedAtRaw),
   }
 }
 

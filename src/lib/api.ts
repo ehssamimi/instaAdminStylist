@@ -89,6 +89,9 @@ import {
   normalizeStylistDetailResponse,
   StylistDetailResponse,
   StylistsListResponse,
+  type StylistBanResponse,
+  type StylistModerationStatusResponse,
+  type StylistUnbanResponse,
 } from "@/models/stylists";
 import { normalizeAdminStylistsListResponse } from "@/lib/admin-stylists-list-normalize";
 import { DuplicatedProductsResponse } from "@/models/duplicatedProducts";
@@ -466,6 +469,7 @@ export const stylistsApi = {
     page?: number;
     per_page?: number;
     search?: string;
+    status?: "active" | "inactive" | "pending" | "banned";
   }): Promise<StylistsListResponse> => {
     const perPage = params?.per_page ?? 10;
     const raw = await api.get<unknown>("/admin/stylists", {
@@ -473,6 +477,7 @@ export const stylistsApi = {
         page: params?.page,
         limit: perPage,
         ...(params?.search?.trim() ? { search: params.search.trim() } : {}),
+        ...(params?.status ? { status: params.status } : {}),
       },
     });
     return normalizeAdminStylistsListResponse(raw, perPage);
@@ -546,6 +551,11 @@ export const stylistsApi = {
     return normalizeStylistDetailResponse(raw);
   },
 
+  /** `DELETE /api/admin/stylists/:id` — permanently removes the stylist account. */
+  remove: async (id: string) => {
+    return api.delete(`/admin/stylists/${encodeURIComponent(id)}`);
+  },
+
   /** Update live stylist profile fields with multipart `PUT /api/stylist/details/:id`. */
   updateDetails: async (id: string, data: FormData) => {
     return api.put<unknown>(
@@ -563,6 +573,52 @@ export const stylistsApi = {
         ],
       }
     );
+  },
+
+  /** `POST /api/admin/stylists/:id/ban` */
+  ban: async (id: string, body: { reason: string }) => {
+    return api.post<StylistBanResponse>(
+      `/admin/stylists/${encodeURIComponent(id)}/ban`,
+      body
+    );
+  },
+
+  /** `POST /api/admin/stylists/:id/unban` */
+  unban: async (id: string, body?: { note?: string }) => {
+    return api.post<StylistUnbanResponse>(
+      `/admin/stylists/${encodeURIComponent(id)}/unban`,
+      body ?? {}
+    );
+  },
+
+  /** `GET /api/admin/stylists/:id/moderation` */
+  getModerationStatus: async (id: string) => {
+    return api.get<StylistModerationStatusResponse>(
+      `/admin/stylists/${encodeURIComponent(id)}/moderation`
+    );
+  },
+};
+
+export type LocationCountry = { id: string; name: string; code: string }
+export type LocationState = { id: string; name: string; code: string }
+export type LocationCity = { id: string; name: string }
+
+export const locationsApi = {
+  getCountries: async (): Promise<LocationCountry[]> => {
+    const data = await api.get<unknown>("/locations/countries");
+    return Array.isArray(data) ? (data as LocationCountry[]) : [];
+  },
+  getStatesByCountry: async (countryId: string): Promise<LocationState[]> => {
+    const data = await api.get<unknown>(
+      `/locations/countries/${encodeURIComponent(countryId)}/states`
+    );
+    return Array.isArray(data) ? (data as LocationState[]) : [];
+  },
+  getCitiesByState: async (stateId: string): Promise<LocationCity[]> => {
+    const data = await api.get<unknown>(
+      `/locations/states/${encodeURIComponent(stateId)}/cities`
+    );
+    return Array.isArray(data) ? (data as LocationCity[]) : [];
   },
 };
 

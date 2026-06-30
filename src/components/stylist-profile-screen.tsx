@@ -5,6 +5,8 @@ import { useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { CircleX } from "lucide-react";
 
+import { BanStylistModal } from "@/components/ban-stylist-modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DetailNotFound } from "@/components/detail-not-found";
 import { EachContainer } from "@/components/each-container";
 import {
@@ -28,6 +30,7 @@ import type { BookingRowDto } from "@/models/bookings";
 import {
   getStylistProfileHeaderStats,
   type StylistDetailDto,
+  type StylistModerationAuditEntry,
 } from "@/models/stylists";
 
 const NO_ONBOARDING_OPTIONS: OnboardingOption[] = [];
@@ -47,6 +50,9 @@ const STYLING_INFO_DEFAULTS: StylingInfoFormValues = {
   gender: "",
   businessName: "",
   location: "",
+  locationCountryId: "6c959176-b60c-4e11-bbc1-8d679c4becd8",
+  locationStateId: "",
+  locationCityId: "",
   linkedInUrl: "",
   tiktokHandle: "",
   instagramHandle: "",
@@ -220,7 +226,9 @@ function buildStylistUpdateFormData(
   appendIfValue(fd, "phoneNumber", values.phoneNumber);
   appendIfValue(fd, "gender", values.gender);
   appendIfValue(fd, "businessName", values.businessName);
-  appendIfValue(fd, "location", values.location);
+  appendIfValue(fd, "countryId", values.locationCountryId);
+  appendIfValue(fd, "stateId", values.locationStateId);
+  appendIfValue(fd, "cityId", values.locationCityId);
   appendIfValue(fd, "linkedInUrl", values.linkedInUrl);
   appendIfValue(fd, "tiktokHandle", values.tiktokHandle);
   appendIfValue(fd, "instagramHandle", values.instagramHandle);
@@ -315,6 +323,9 @@ function buildStylingInfoValues(
     gender: stylist.gender?.trim().toLowerCase() ?? "",
     businessName: show(stylist.businessName),
     location: show(stylist.location),
+    locationCountryId: stylist.locationStructured?.countryId ?? "6c959176-b60c-4e11-bbc1-8d679c4becd8",
+    locationStateId: stylist.locationStructured?.stateId ?? "",
+    locationCityId: stylist.locationStructured?.cityId ?? "",
     linkedInUrl: show(stylist.linkedInUrl),
     tiktokHandle: show(stylist.tiktokHandle),
     instagramHandle: show(stylist.instagramHandle),
@@ -497,6 +508,8 @@ export type StylistProfileScreenProps = {
   stylistBookingsFromApi?: StylistProfileBookingsFromApi | null;
   /** Called after a successful approve instead of redirecting to backHref. */
   onAfterApprove?: () => void;
+  /** Refetch stylist detail after ban/unban or profile update. */
+  onRefetch?: () => void;
 };
 
 export function StylistProfileScreen({
@@ -509,12 +522,22 @@ export function StylistProfileScreen({
   showBookingActivityCard = false,
   stylistBookingsFromApi = null,
   onAfterApprove,
+  onRefetch,
 }: StylistProfileScreenProps) {
   useEffect(() => {
     if (errorMessage) toast.error(errorMessage);
   }, [errorMessage]);
 
   const [updateSubmitting, setUpdateSubmitting] = useState(false);
+  const [banModalOpen, setBanModalOpen] = useState(false);
+  const [banSubmitting, setBanSubmitting] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
+  const [banReason, setBanReason] = useState<string | null>(null);
+  const [moderationAudit, setModerationAudit] = useState<
+    StylistModerationAuditEntry[]
+  >([]);
+  const [reinstateDialogOpen, setReinstateDialogOpen] = useState(false);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const {
     rejectModalOpen,
     setRejectModalOpen,
@@ -538,6 +561,43 @@ export function StylistProfileScreen({
   const stylingFormLocked = stylist ? stylist.isVerified !== true : false;
   const showRejectedState = shouldShowRejectedState(stylist);
   const rejectionReason = stylist?.rejectionReason?.trim();
+  const showBannedState = Boolean(stylist && isBanned);
+
+  useEffect(() => {
+    if (!stylist) {
+      setIsBanned(false);
+      setBanReason(null);
+      return;
+    }
+    setIsBanned(stylist.accountStatus === "BANNED");
+    setBanReason(stylist.banReason?.trim() || null);
+  }, [stylist]);
+
+  useEffect(() => {
+    if (!stylistId || !stylist?.isVerified) {
+      setModerationAudit([]);
+      return;
+    }
+
+    let cancelled = false;
+    void stylistsApi
+      .getModerationStatus(stylistId)
+      .then((status) => {
+        if (cancelled) return;
+        setModerationAudit(status.recentAudit ?? []);
+        if (status.accountStatus === "BANNED") {
+          setIsBanned(true);
+          setBanReason(status.banReason?.trim() || null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setModerationAudit([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stylistId, stylist?.isVerified, stylist?.accountStatus]);
 
   const actionsDisabled =
     !stylistId ||
@@ -569,7 +629,12 @@ export function StylistProfileScreen({
   const profileSrc = stylist?.profile_picture?.trim();
 
   async function handleUpdateStylist() {
-    if (!stylistId || !stylist) return;
+    if (!stylistId || !stylist || isBanned) return;
+    const values = form.getValues();
+    if (values.locationStateId && !values.locationCityId) {
+      toast.error("Please select a city before updating.");
+      return;
+    }
     setUpdateSubmitting(true);
     try {
       const fd = buildStylistUpdateFormData(
@@ -586,6 +651,52 @@ export function StylistProfileScreen({
     }
   }
 
+  async function handleReinstateConfirm() {
+    if (!stylistId) return;
+    setBanSubmitting(true);
+    try {
+      await stylistsApi.unban(stylistId);
+      toast.success("Stylist reinstated.");
+      setIsBanned(false);
+      setBanReason(null);
+      onRefetch?.();
+      const status = await stylistsApi.getModerationStatus(stylistId);
+      setModerationAudit(status.recentAudit ?? []);
+    } catch (e) {
+      toast.error(getApiErrorMessage(e));
+      throw e;
+    } finally {
+      setBanSubmitting(false);
+    }
+  }
+
+  async function handleBanConfirm(reason: string) {
+    if (!stylistId) return;
+    setBanSubmitting(true);
+    try {
+      const response = await stylistsApi.ban(stylistId, { reason });
+      toast.success("Stylist banned.");
+      setIsBanned(true);
+      setBanReason(response.data.banReason ?? reason);
+      const failedCount = response.data.failedCancellations?.length ?? 0;
+      if (failedCount > 0) {
+        toast.warning(
+          `${failedCount} booking cancellation${failedCount === 1 ? "" : "s"} could not be completed.`
+        );
+      }
+      onRefetch?.();
+      const status = await stylistsApi.getModerationStatus(stylistId);
+      setModerationAudit(status.recentAudit ?? []);
+    } catch (e) {
+      toast.error(getApiErrorMessage(e));
+      throw e;
+    } finally {
+      setBanSubmitting(false);
+    }
+  }
+
+  const stylistDisplayName = stylist ? displayNameFromDetail(stylist) : "";
+
   return (
     <div className="-m-4 min-h-full bg-[#F9F8F3] px-4 py-6 md:-m-10 md:px-10 md:py-8">
       <RejectStylistModal
@@ -593,6 +704,33 @@ export function StylistProfileScreen({
         onOpenChange={setRejectModalOpen}
         isSubmitting={rejectSubmitting}
         onConfirm={handleRejectConfirm}
+      />
+
+      <BanStylistModal
+        open={banModalOpen}
+        onOpenChange={setBanModalOpen}
+        action="ban"
+        onConfirm={handleBanConfirm}
+      />
+
+      <ConfirmDialog
+        open={reinstateDialogOpen}
+        onOpenChange={setReinstateDialogOpen}
+        title="Reinstate Stylist?"
+        description="Are you sure you want to reinstate this stylist? They will be able to receive bookings again."
+        confirmLabel="Yes, Reinstate"
+        cancelLabel="Go Back"
+        onConfirm={handleReinstateConfirm}
+      />
+
+      <ConfirmDialog
+        open={removeDialogOpen}
+        onOpenChange={setRemoveDialogOpen}
+        title="Remove Stylist?"
+        description="Are you sure you want to remove this stylist? All existing bookings will be cancelled and users will receive a refund."
+        confirmLabel="Remove"
+        cancelLabel="Go Back"
+        onConfirm={() => setRemoveDialogOpen(false)}
       />
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -605,8 +743,20 @@ export function StylistProfileScreen({
           <StylistProfileHeaderActions
             loading={loading}
             stylingFormLocked={stylingFormLocked}
+            banButton={{
+              isBanned,
+              disabled: !stylist || loading || banSubmitting,
+              onClick: isBanned
+                ? () => setReinstateDialogOpen(true)
+                : () => setBanModalOpen(true),
+              stylistName: stylistDisplayName,
+            }}
+            removeButton={{
+              disabled: !stylist || loading,
+              onClick: () => setRemoveDialogOpen(true),
+            }}
             updateButton={{
-              disabled: !stylist || loading || updateSubmitting,
+              disabled: !stylist || loading || updateSubmitting || isBanned,
               onClick: () => void handleUpdateStylist(),
             }}
             pendingVerification={{
@@ -665,6 +815,44 @@ export function StylistProfileScreen({
               </div>
             </div>
           ) : null}
+          {showBannedState ? (
+            <div
+              className="mb-2 flex items-start gap-3 rounded-lg border-red-200 border-l-4 border-l-red-500 bg-red-50 px-4 py-3 text-red-600"
+              role="alert"
+            >
+              <CircleX className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <div className="min-w-0 font-satoshi">
+                <p className="text-sm font-bold leading-5">Stylist Banned</p>
+                {banReason ? (
+                  <p className="mt-1 text-xs leading-5">{banReason}</p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          {moderationAudit.length > 0 ? (
+            <EachContainer title="Moderation History" className="mb-6">
+              <ul className="flex max-h-[200px] flex-col gap-3 overflow-y-auto">
+                {moderationAudit.map((entry) => (
+                  <li
+                    key={entry.id}
+                    className="rounded-lg border border-[#E9EAEB] bg-white px-4 py-3 font-satoshi text-sm"
+                  >
+                    <p className="font-semibold text-[#121417]">
+                      {entry.action === "BANNED" ? "Banned" : "Unbanned"}
+                    </p>
+                    {entry.reason ? (
+                      <p className="mt-1 text-xs leading-5 text-[#535862]">
+                        {entry.reason}
+                      </p>
+                    ) : null}
+                    <p className="mt-2 text-xs text-[#717680]">
+                      {new Date(entry.createdAt).toLocaleString()}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </EachContainer>
+          ) : null}
           {showBookingActivityCard ? (
             <StylistBookingActivityCard
               bookings={
@@ -692,7 +880,7 @@ export function StylistProfileScreen({
             <div className="flex flex-col gap-6">
               <StylistProfileStylingInfoSection
                 control={form.control}
-                disabled={stylingFormLocked}
+                disabled={stylingFormLocked || isBanned}
                 genderOptions={genderOptions}
                 experienceOptions={experienceOptions}
               />
@@ -707,7 +895,7 @@ export function StylistProfileScreen({
                 <StylingSpecialityTagGrid
                   control={form.control}
                   options={specialityRows ?? NO_ONBOARDING_OPTIONS}
-                  disabled={stylingFormLocked}
+                  disabled={stylingFormLocked || isBanned}
                 />
               </EachContainer>
 
@@ -720,7 +908,7 @@ export function StylistProfileScreen({
                 <RecommendedShopsGrid
                   control={form.control}
                   shops={shopRows ?? NO_ONBOARDING_OPTIONS}
-                  disabled={stylingFormLocked}
+                  disabled={stylingFormLocked || isBanned}
                 />
               </EachContainer>
             </div>
